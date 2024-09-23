@@ -1,0 +1,12 @@
+Line of tasks to complete Tiny Troopers:
+
+1. Define the project's requirements (minimal viable product), features, and design choices
+    a. How will we render the game?
+    b. What and where will GUI be required? 
+    c. Specify character differences, if any (classes, weapons, health, movement, etc)
+    d. Will there be pickups around the map(s)? (medkits, ammo, weapons, etc.)
+    e. How complex is the map(s) layout and features?
+    
+2. Create the minimum requirements of the program, test, revise
+
+3. Create expanding features to make the game more appealing and varied
