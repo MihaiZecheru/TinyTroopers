@@ -2,10 +2,27 @@ Line of tasks to complete Tiny Troopers:
 
 1. Define the project's requirements (minimal viable product), features, and design choices
     a. How will we render the game?
+        Chris will be addressing rendering.
+
     b. What and where will GUI be required? 
+        Chris will be addressing GUI.
+
     c. Specify character differences, if any (classes, weapons, health, movement, etc)
+        Steven's ideas: 
+        Different classes, each with a unique weapon and skills.
+        Only one weapon, but has abilities (two?). 
+        Health is 100, but can vary between classes. 
+        Movement is snappy (no momentum).
+
     d. Will there be pickups around the map(s)? (medkits, ammo, weapons, etc.)
+        Steven's ideas: 
+        There will be medkits that heal some amount (25?) and regenerate in ~15 seconds. 
+        No ammo/reload system, aiming for continuous combat.
+        One-ammo weapons spawn randomly with absurd or unique bullets (wall, lightning, wallpierce).
+
     e. How complex is the map(s) layout and features?
+        Steven's ideas:
+        Map(s) are minimalistic. No elevation system (upper/lower ground). Possibly pitfalls, destructable walls, moving walls, etc.
     
 2. Create the minimum requirements of the program, test, revise
 
