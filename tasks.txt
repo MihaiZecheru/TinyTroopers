@@ -5,10 +5,11 @@ Do frontend for StartScreen
 ------------- In Progress -------------
 
 Chris
-    -
+    - Implement functional framework and direction
+    - Setup websockets
 
 Steven
-    -
+    - Design artistic direction and improve GUI
 
 Aditya
     -
