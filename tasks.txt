@@ -1,5 +1,14 @@
-Chris
-    - Setup GUI
+------------- TODO -------------
 
-Anybody
-    - Do frontend for StartScreen
+Do frontend for StartScreen
+
+------------- In Progress -------------
+
+Chris
+    -
+
+Steven
+    -
+
+Aditya
+    -
