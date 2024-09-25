@@ -1,7 +1,6 @@
 package TinyTroopers;
 
 import TinyTroopers.Screens.StartScreen;
-import TinyTroopers.Screens.WaitingForPlayersScreen;
 
 import javax.swing.*;
 import java.util.Objects;
