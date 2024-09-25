@@ -48,11 +48,11 @@ public class StartScreen extends Screen {
      * Initialize event listeners for the three buttons: join room, create room, and exit.
      */
     private void InitializeEventListeners() {
-        this.createRoomButton.addActionListener(e -> OnCreateRoomButtonPress());
+        this.createRoomButton.addActionListener(_ -> OnCreateRoomButtonPress());
 
-        this.joinRoomButton.addActionListener(e -> OnJoinRoomButtonPress());
+        this.joinRoomButton.addActionListener(_ -> OnJoinRoomButtonPress());
 
-        this.exitButton.addActionListener(e -> System.exit(0));
+        this.exitButton.addActionListener(_ -> System.exit(0));
     }
 
     /**
