@@ -1,1 +1,5 @@
-Chris - Setup GUI
+Chris
+    - Setup GUI
+
+Anybody
+    - Do frontend for StartScreen
