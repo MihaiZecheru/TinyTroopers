@@ -1,16 +1,17 @@
-------------- TODO -------------
+---------------- TO DO -----------------
 
-Do frontend for StartScreen
+* Develop game engine and renderer (TOP PRIORITY)
+* Create Screens and GUI
+* Implement core gameplay mechanics
+* Add SFX, music, and graphics
 
-------------- In Progress -------------
+----------- Current Task(s) ------------
 
 Chris
-    - Implement functional framework and direction
-    - Setup websockets
+    - Figuring out multiplayer connectivity
+    - Developing Screens
 
 Steven
-    - Design artistic direction and improve GUI
-    - Draw hero sprites (surviv.io style)
+    - Fleshing out design direction
 
 Aditya
-    -
