@@ -13,5 +13,7 @@ Chris
 
 Steven
     - Fleshing out design direction
+    - Drawing hero png files
+    - Drafting soundtrack and SFX
 
 Aditya
