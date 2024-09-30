@@ -10,6 +10,7 @@ Chris
 
 Steven
     - Design artistic direction and improve GUI
+    - Draw hero sprites (surviv.io style)
 
 Aditya
     -
