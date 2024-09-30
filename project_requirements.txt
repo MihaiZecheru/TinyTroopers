@@ -1,3 +1,9 @@
+
+Moved project requirements and roadmap to a Google Doc. Link below:
+https://docs.google.com/document/d/1gNAFDFhqdU8z7RqErqfQMzoqro_Ifs07YQE_qmvG0Ng/edit?usp=sharing
+
+Anything below is to be reworked or removed if it is not needed.
+------------------------------------------------------------------
 Hero based system
 
 Players choose from a variety of heroes.
