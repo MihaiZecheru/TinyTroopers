@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import expressWs from 'express-ws';
 
-import Server from './server';
+import Server from './Server';
 import KeepAlive from './KeepAlive';
 import WaitingPlayer from './WaitingPlayer';
 import Room from './Room';
