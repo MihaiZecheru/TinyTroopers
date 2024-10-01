@@ -1,0 +1,24 @@
+{
+  "name": "tinytrooperswebsocketserver",
+  "version": "1.0.0",
+  "description": "Websocket server for the TinyTroopers game.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "ts-node src/index.ts",
+    "dev": "nodemon src/index.ts"
+  },
+  "author": "Mihai Zecheru",
+  "license": "MIT",
+  "dependencies": {
+    "@types/express": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-ws": "^5.0.2",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/express-ws": "^3.0.5",
+    "@types/ws": "^8.5.12"
+  }
+}
