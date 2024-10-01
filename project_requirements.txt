@@ -1,0 +1,34 @@
+
+Moved project requirements and roadmap to a Google Doc. Link below:
+https://docs.google.com/document/d/13gyoAPRryX3CrMQUjLCs-U1dFJ5oGsm9hn7zMmfaTVw/edit?usp=sharing
+
+Anything below is to be reworked or removed if it is not needed.
+------------------------------------------------------------------
+Hero based system
+
+Players choose from a variety of heroes.
+
+All players have a knife, a gun, and two utilities:
+    - Grenades (amount determined by hero)
+    - Destructible temporary covers (amount determined by hero)
+
+All heroes are the same as the others, except they each have:
+    - their own weapons
+    - different health amounts
+    - different amounts of grenades / temporary cover
+    - different movement speeds
+
+MINIMUM REQUIREMENTS
+    - start screen with create / join room option
+    - waiting for players room
+    - GAME MINIMUM REQUIREMENTS:
+        - one map
+        - heroes
+        - working multiplayer
+        - players can shoot and kill each other
+        - game end screen showing stats for the game like kills, assists, etc.
+    - GAME MODE MINIMUM REQUIREMENTS:
+        - Deathmatch (timer, most kills wins)
+            - The timer duration is determined on the create room screen
+        - Last man standing (multiple rounds of last player alive wins, go until one player has won 3 rounds)
+            - The amount of round wins is determined on the create room screen
