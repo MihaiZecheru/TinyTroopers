@@ -1,3 +1,6 @@
-.idea
-.env
-production
+client/.idea
+client/.env
+client/production
+
+server/.env
+server/node_modules
