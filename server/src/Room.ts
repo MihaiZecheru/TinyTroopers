@@ -1,16 +1,23 @@
-import { UUID, randomUUID } from "crypto";
 import WaitingPlayer from "./WaitingPlayer";
 import Player from "./Player";
 import SendMessage from "./SendMessage";
+
+/**
+ * Generates a room ID.
+ * FIXME: doesn't check to see if the ID is already in use
+ */
+function GenerateRoomID(): string {
+  return new Random().nextInt(900000) + 100000;
+}
 
 /**
  * Represents a TinyTroopers game room.
  */
 export default class Room {
   /**
-   * The ID of the room
+   * The ID of the room. Functions as the room code.
    */
-  public RoomID: UUID;
+  public RoomID: string;
 
   /**
    * True if the game has begun, false if the room is still waiting for players to join.
@@ -35,7 +42,7 @@ export default class Room {
   }
 
   constructor() {
-    this.RoomID = randomUUID();
+    this.RoomID = GenerateRoomID();
   }
 
   /**
