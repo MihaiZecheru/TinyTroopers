@@ -37,17 +37,17 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
+            <tr id="create-room">
                 <td>POST</td>
                 <td>/api/create-room</td>
                 <td>Create a new Tiny Troopers room</td>
             </tr>
-            <tr>
+            <tr id="get-rooms">
                 <td>GET</td>
                 <td>/api/rooms</td>
                 <td>Get the ID of all active rooms</td>
             </tr>
-            <tr>
+            <tr id="get-players">
                 <td>GET</td>
                 <td>/api/:room_id/players</td>
                 <td>Get all players in a room</td>
@@ -60,5 +60,21 @@
         </tbody>
     </table>
 
+    <script>
+        document.getElementById("create-room").addEventListener('click', () => {
+            fetch("/api/create-room", {
+                method: "POST"
+            }).then(res => res.json()).then(data => alert("Created room with ID: " + data.room_id));
+        });
+
+        document.getElementById("get-rooms").addEventListener('click', () => {
+            window.location.href = "/api/rooms";
+        });
+
+        document.getElementById("get-players").addEventListener('click', () => {
+            const room_id = prompt("Enter room_id");
+            window.location.href = `/api/${room_id}/players`;
+        });
+    </script>
 </body>
 </html>
