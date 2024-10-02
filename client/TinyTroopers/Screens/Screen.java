@@ -25,13 +25,10 @@ public abstract class Screen extends JPanel {
 
     /**
      * Display the screen to the main window
-     *
-     * @return The object for chaining purposes
      */
-    public Screen Display() {
+    public void Display() {
         this.w.setContentPane(this);
         this.w.revalidate();
         this.w.repaint();
-        return this;
     }
 }
