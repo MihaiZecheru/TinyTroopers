@@ -1,6 +1,9 @@
 import { UUID } from "crypto";
 import Room from "./Room";
 
+/**
+ * Handles the Tiny Troopers game rooms
+ */
 export default class Server {
   private static Rooms: Room[] = [];
 
@@ -10,7 +13,19 @@ export default class Server {
     return room;
   }
 
+  /**
+   * Get a room by its ID
+   * 
+   * @returns The room if it exists, null otherwise
+   */
   public static GetRoom(room_id: UUID): Room | null {
     return this.Rooms.find(r => r.RoomID === room_id) || null;
+  }
+
+  /**
+   * Get the ID of every room
+   */
+  public static GetRooms(): string[] {
+    return this.Rooms.map((r: Room) => r.RoomID);
   }
 }
