@@ -4,3 +4,5 @@ client/production
 
 server/.env
 server/node_modules
+
+out
