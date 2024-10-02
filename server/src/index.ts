@@ -34,6 +34,14 @@ app.post('/api/create-room', (req: Request, res: Response) => {
 });
 
 /**
+ * Get the ID of every active room
+ */
+app.get('/api/rooms', (req: Request, res: Response) => {
+  const rooms: string[] = Server.GetRooms();
+  res.send(rooms);
+});
+
+/**
  * Get all players in the room with the given ID.
  * Will only get the ID of each player
  */
