@@ -8,7 +8,7 @@ import SendMessage from "./SendMessage";
  */
 function GenerateRoomID(): string {
   // Generate a random 6-digit number
-  return Math.floor(Math.random() * 900000) + 100000;
+  return (Math.floor(Math.random() * 900000) + 100000).toString();
 }
 
 /**
