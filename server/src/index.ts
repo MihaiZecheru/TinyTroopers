@@ -6,7 +6,6 @@ import KeepAlive from './KeepAlive';
 import WaitingPlayer from './WaitingPlayer';
 import Room from './Room';
 import { WebSocket } from 'ws';
-import { UUID } from 'crypto';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -46,7 +45,7 @@ app.get('/api/rooms', (req: Request, res: Response) => {
  * Will only get the ID of each player
  */
 app.get('/api/:room_id/players', (req: Request, res: Response) => {
-  const room: Room | null = Server.GetRoom(req.params.room_id as UUID);
+  const room: Room | null = Server.GetRoom(req.params.room_id);
 
   // Room ID was invalid
   if (!room) {
@@ -63,7 +62,7 @@ app.get('/api/:room_id/players', (req: Request, res: Response) => {
  * While waiting for the game to start, players will automatically be sent a message when a new player joins the room or when a player leaves the room.
  */
 app_ws.ws('/ws/:room_id', (ws: WebSocket, req: Request) => {
-  const room: Room | null = Server.GetRoom(req.params.room_id as UUID);
+  const room: Room | null = Server.GetRoom(req.params.room_id);
 
   // Room ID was invalid
   if (!room) {
