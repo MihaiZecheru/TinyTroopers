@@ -19,8 +19,8 @@ const app_ws = expressWs(app).app;
  * Home route. Used to verify that app is online
  */
 app.get('/', (req: Request, res: Response) => {
-  const github = "https://github.com/MihaiZecheru/TinyTroopers";
-  res.send(`<p>This is the API for the <a href="${github}">Tiny Troopers</a> game.<br/><br/>POST /api/create-room - create a room<br/>WS /ws/:room_id - connect to a room</p>`);
+console.log(__dirname);
+  res.sendFile(__dirname + '/index.html');
 });
 
 /**
@@ -31,6 +31,22 @@ app.get('/', (req: Request, res: Response) => {
 app.post('/api/create-room', (req: Request, res: Response) => {
   const room: Room = Server.CreateRoom();
   res.json({ room_id: room.RoomID });
+});
+
+/**
+ * Get all players in the room with the given ID.
+ * Will only get the ID of each player
+ */
+app.get('/api/:room_id/players', (req: Request, res: Response) => {
+  const room: Room | null = Server.GetRoom(req.params.room_id as UUID);
+
+  // Room ID was invalid
+  if (!room) {
+    res.send("Invalid room ID - room does not exist");
+    return;
+  }
+
+  res.send(room.GetPlayers());
 });
 
 /**
