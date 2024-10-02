@@ -16,23 +16,31 @@ app.use(express.json());
 const app_ws = expressWs(app).app;
 
 /**
+ * Home route. Used to verify that app is online
+ */
+app.get('/', (req: Request, res: Response) => {
+  const github = "https://github.com/MihaiZecheru/TinyTroopers";
+  res.send(`<p>This is the API for the <a href="${github}">Tiny Troopers</a> game.<br/><br/>POST /api/create-room - create a room<br/>WS /ws/:room_id - connect to a room</p>`);
+});
+
+/**
  * Create a new room.
- * 
+ *
  * Note that this does not connect the player to the room. To connect to the room, the player must use the WebSocket endpoint.
  */
-app.get('/api/create-room', (req: Request, res: Response) => {
+app.post('/api/create-room', (req: Request, res: Response) => {
   const room: Room = Server.CreateRoom();
   res.json({ room_id: room.RoomID });
 });
 
 /**
  * Connect to a room.
- * 
+ *
  * While waiting for the game to start, players will automatically be sent a message when a new player joins the room or when a player leaves the room.
  */
 app_ws.ws('/ws/:room_id', (ws: WebSocket, req: Request) => {
   const room: Room | null = Server.GetRoom(req.params.room_id as UUID);
-  
+
   // Room ID was invalid
   if (!room) {
     ws.close();
@@ -47,7 +55,7 @@ app_ws.ws('/ws/:room_id', (ws: WebSocket, req: Request) => {
     const msg: { event: string, data?: string } = JSON.parse(message.data);
     room.HandleMessage(player.PlayerID, msg.event, msg?.data);
   }
-  
+
   const interval_id: NodeJS.Timeout = KeepAlive(ws);
   ws.onclose = () => {
     if (interval_id) clearInterval(interval_id);
