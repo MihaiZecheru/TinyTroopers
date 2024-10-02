@@ -1,4 +1,3 @@
-import { UUID } from "crypto";
 import Room from "./Room";
 
 /**
@@ -18,7 +17,7 @@ export default class Server {
    * 
    * @returns The room if it exists, null otherwise
    */
-  public static GetRoom(room_id: UUID): Room | null {
+  public static GetRoom(room_id: string): Room | null {
     return this.Rooms.find(r => r.RoomID === room_id) || null;
   }
 
