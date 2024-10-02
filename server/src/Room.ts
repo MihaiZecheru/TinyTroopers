@@ -1,16 +1,24 @@
-import { UUID, randomUUID } from "crypto";
 import WaitingPlayer from "./WaitingPlayer";
 import Player from "./Player";
 import SendMessage from "./SendMessage";
+
+/**
+ * Generates a room ID.
+ * FIXME: doesn't check to see if the ID is already in use
+ */
+function GenerateRoomID(): string {
+  // Generate a random 6-digit number
+  return (Math.floor(Math.random() * 900000) + 100000).toString();
+}
 
 /**
  * Represents a TinyTroopers game room.
  */
 export default class Room {
   /**
-   * The ID of the room
+   * The ID of the room. Functions as the room code.
    */
-  public RoomID: UUID;
+  public RoomID: string;
 
   /**
    * True if the game has begun, false if the room is still waiting for players to join.
@@ -35,13 +43,13 @@ export default class Room {
   }
 
   constructor() {
-    this.RoomID = randomUUID();
+    this.RoomID = GenerateRoomID();
   }
 
   /**
    * Add a player to the room. This is a 'WaitingPlayer' object, as players cannot join mid-game.
    * This player will automatically be sent a message when a new player joins the room or when a player leaves the room.
-   * 
+   *
    * @param player The player to add to the room. This is a 'WaitingPlayer' object, as players cannot join mid-game.
    */
   public AddPlayer(player: WaitingPlayer) {
@@ -56,7 +64,7 @@ export default class Room {
 
   /**
    * Remove the player with the given ID from the room.
-   * 
+   *
    * @param id The ID of the player to remove.
    */
   public RemovePlayer(id: string) {
@@ -70,8 +78,19 @@ export default class Room {
   }
 
   /**
+   * Get the players as a list of player IDs
+   */
+  public GetPlayers(): string[] {
+    if (this.Players.length)
+      return this.Players.map((p: Player) => p.PlayerID);
+    else if (this.PreGamePlayers.length)
+      return this.PreGamePlayers.map((p: WaitingPlayer) => p.PlayerID);
+    else return [];
+  }
+
+  /**
    * Handle a message from a player.
-   * 
+   *
    * @param id The ID of the player who sent the message.
    * @param event The event that the player sent.
    * @param data The data that the player sent.
@@ -80,5 +99,4 @@ export default class Room {
     // Handle message
     console.log(`Received message from ${id}: ${event} ${data}`);
   }
-    
 }

@@ -6,7 +6,6 @@ import KeepAlive from './KeepAlive';
 import WaitingPlayer from './WaitingPlayer';
 import Room from './Room';
 import { WebSocket } from 'ws';
-import { UUID } from 'crypto';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -16,23 +15,55 @@ app.use(express.json());
 const app_ws = expressWs(app).app;
 
 /**
+ * Home route. Used to verify that app is online
+ */
+app.get('/', (req: Request, res: Response) => {
+console.log(__dirname);
+  res.sendFile(__dirname + '/index.html');
+});
+
+/**
  * Create a new room.
- * 
+ *
  * Note that this does not connect the player to the room. To connect to the room, the player must use the WebSocket endpoint.
  */
-app.get('/api/create-room', (req: Request, res: Response) => {
+app.post('/api/create-room', (req: Request, res: Response) => {
   const room: Room = Server.CreateRoom();
   res.json({ room_id: room.RoomID });
 });
 
 /**
+ * Get the ID of every active room
+ */
+app.get('/api/rooms', (req: Request, res: Response) => {
+  const rooms: string[] = Server.GetRooms();
+  res.send(rooms);
+});
+
+/**
+ * Get all players in the room with the given ID.
+ * Will only get the ID of each player
+ */
+app.get('/api/:room_id/players', (req: Request, res: Response) => {
+  const room: Room | null = Server.GetRoom(req.params.room_id);
+
+  // Room ID was invalid
+  if (!room) {
+    res.send("Invalid room ID - room does not exist");
+    return;
+  }
+
+  res.send(room.GetPlayers());
+});
+
+/**
  * Connect to a room.
- * 
+ *
  * While waiting for the game to start, players will automatically be sent a message when a new player joins the room or when a player leaves the room.
  */
 app_ws.ws('/ws/:room_id', (ws: WebSocket, req: Request) => {
-  const room: Room | null = Server.GetRoom(req.params.room_id as UUID);
-  
+  const room: Room | null = Server.GetRoom(req.params.room_id);
+
   // Room ID was invalid
   if (!room) {
     ws.close();
@@ -47,7 +78,7 @@ app_ws.ws('/ws/:room_id', (ws: WebSocket, req: Request) => {
     const msg: { event: string, data?: string } = JSON.parse(message.data);
     room.HandleMessage(player.PlayerID, msg.event, msg?.data);
   }
-  
+
   const interval_id: NodeJS.Timeout = KeepAlive(ws);
   ws.onclose = () => {
     if (interval_id) clearInterval(interval_id);
