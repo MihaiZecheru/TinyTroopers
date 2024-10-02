@@ -7,7 +7,8 @@ import SendMessage from "./SendMessage";
  * FIXME: doesn't check to see if the ID is already in use
  */
 function GenerateRoomID(): string {
-  return new Random().nextInt(900000) + 100000;
+  // Generate a random 6-digit number
+  return Math.floor(Math.random() * 900000) + 100000;
 }
 
 /**
