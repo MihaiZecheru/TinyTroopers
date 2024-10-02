@@ -1,12 +1,12 @@
 package TinyTroopers.Screens;
 
+import TinyTroopers.API;
+
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 public class StartScreen extends Screen {
-    private JButton createRoomButton = null;
-    private JButton joinRoomButton = null;
-    private JButton exitButton = null;
 
     public StartScreen(JFrame window) {
         super(window);
@@ -17,28 +17,20 @@ public class StartScreen extends Screen {
         // Set the layout for the main panel
         setLayout(new BorderLayout());
 
-        // Create a centered panel
-        JPanel centerPanel = new JPanel();
-        centerPanel.setLayout(new GridLayout(3, 1, 10, 10)); // 3 rows, 1 column, with gaps
+        // Create components
+        var createRoomButton = new JButton("Create Room");
+        var roomCodeInput = new JTextField();
+        var exitButton = new JButton("Exit");
 
-        // Create buttons
-        createRoomButton = new JButton("Create Room");
-        joinRoomButton = new JButton("Join Room");
-        exitButton = new JButton("Exit");
+        // Configure components
+        createRoomButton.setPreferredSize(new Dimension(200, 50));
+        roomCodeInput.setPreferredSize(new Dimension(200, 50));
+        exitButton.setPreferredSize(new Dimension(200, 50));
 
-        // Add buttons to the center panel
-        centerPanel.add(this.createRoomButton);
-        centerPanel.add(this.joinRoomButton);
-        centerPanel.add(this.exitButton);
-
-        // Set background color
-        setBackground(Color.LIGHT_GRAY);
-
-        // Set center panel background color
-        centerPanel.setBackground(Color.DARK_GRAY);
-
-        // Center the panel in the main panel
-        add(centerPanel, BorderLayout.CENTER);
+        // Add buttons
+        add(createRoomButton, BorderLayout.NORTH);
+        add(roomCodeInput, BorderLayout.CENTER);
+        add(exitButton, BorderLayout.SOUTH);
 
         // Initialize event listeners
         InitializeEventListeners();
@@ -48,28 +40,68 @@ public class StartScreen extends Screen {
      * Initialize event listeners for the three buttons: join room, create room, and exit.
      */
     private void InitializeEventListeners() {
-        this.createRoomButton.addActionListener(_ -> OnCreateRoomButtonPress());
+        JButton createRoomButton = (JButton) this.getComponents()[0];
+        createRoomButton.addActionListener(_ -> OnCreateRoomButtonPress());
 
-        this.joinRoomButton.addActionListener(_ -> OnJoinRoomButtonPress());
+        JTextField roomCodeInputComponent = (JTextField) this.getComponents()[1];
+        roomCodeInputComponent.addActionListener(_ -> JoinRoom());
 
-        this.exitButton.addActionListener(_ -> System.exit(0));
+        JButton exitButton = (JButton) this.getComponents()[2];
+        exitButton.addActionListener(_ -> System.exit(0));
     }
 
     /**
      * Logic for when the create room button is pressed.
+     * Will create a room and take the user to the waiting for players screen.
      */
     private void OnCreateRoomButtonPress() {
-        System.out.println("CREATE ROOM BUTTON PRESSED");
-        // TODO: create the room here
-        new WaitingForPlayersScreen(this.w).Display();
+        try {
+            String room_id = API.CreateRoom();
+            new WaitingForPlayersScreen(this.w, room_id).Display();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(
+                null,
+                e.getMessage(),
+                "Error creating room",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 
     /**
-     * Logic for when the join room button is pressed.
+     * Called when the user presses 'enter' in the room code input field.
+     * Will attempt to join the room with the given code then redirect to the waiting for players screen if successful.
      */
-    private void OnJoinRoomButtonPress() {
-        System.out.println("JOIN ROOM BUTTON PRESSED");
-        // TODO: join the room here
-        new WaitingForPlayersScreen(this.w).Display();
+    private void JoinRoom() {
+        List<String> rooms = null;
+        try {
+            rooms = API.GetRooms();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        JTextField roomCodeInputComponent = (JTextField) this.getComponents()[1];
+        String room_id = roomCodeInputComponent.getText();
+        if (room_id.isEmpty() || !rooms.contains(room_id)) {
+            JOptionPane.showMessageDialog(
+                null,
+                "The code you have entered is invalid",
+                "Error joining room",
+                JOptionPane.ERROR_MESSAGE
+            );
+            roomCodeInputComponent.setText("");
+            return;
+        }
+
+        try {
+            new WaitingForPlayersScreen(this.w, room_id).Display();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(
+                null,
+                e.getMessage(),
+                "Error joining room",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 }
