@@ -2,6 +2,7 @@
 
 Top-down multiplayer shooter prototype in C++ with a Raylib client and UDP client-server backend.
 
+Main server is hosted on https://tiny-troopers.mzecheru.com
 ---
 
 ## Prerequisites
