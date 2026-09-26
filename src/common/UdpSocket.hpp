@@ -22,6 +22,7 @@ using SocketHandle = SOCKET;
 #else
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>

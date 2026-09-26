@@ -93,7 +93,17 @@ sockaddr_in UdpSocket::MakeAddress(const std::string& host, std::uint16_t port) 
     sockaddr_in address{};
     address.sin_family = AF_INET;
     address.sin_port = htons(port);
-    inet_pton(AF_INET, host.c_str(), &address.sin_addr);
+    if (inet_pton(AF_INET, host.c_str(), &address.sin_addr) <= 0) {
+        addrinfo hints{};
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_DGRAM;
+        addrinfo* result = nullptr;
+        const std::string portStr = std::to_string(port);
+        if (getaddrinfo(host.c_str(), portStr.c_str(), &hints, &result) == 0 && result != nullptr) {
+            address = *reinterpret_cast<sockaddr_in*>(result->ai_addr);
+            freeaddrinfo(result);
+        }
+    }
     return address;
 }
 
