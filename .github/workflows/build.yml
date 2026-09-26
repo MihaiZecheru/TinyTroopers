@@ -44,14 +44,12 @@ jobs:
           if (Test-Path "README.md") {
               Copy-Item "README.md" -Destination "$packageDir/"
           }
-          
-          Compress-Archive -Path "$packageDir/*" -DestinationPath "TinyTroopers-Client-Windows.zip" -Force
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
           name: TinyTroopers-Client-Windows
-          path: TinyTroopers-Client-Windows.zip
+          path: TinyTroopers-Windows/
 
   build-macos:
     name: Build macOS Client
@@ -89,14 +87,12 @@ jobs:
           chmod +x TinyTroopers-macOS/TinyTroopersClient
           cp -r assets TinyTroopers-macOS/
           [ -f "README.md" ] && cp README.md TinyTroopers-macOS/
-          
-          zip -r TinyTroopers-Client-macOS.zip TinyTroopers-macOS
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
         with:
           name: TinyTroopers-Client-macOS
-          path: TinyTroopers-Client-macOS.zip
+          path: TinyTroopers-macOS/
 
   create-release:
     name: Create GitHub Release
@@ -111,11 +107,18 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: TinyTroopers-Client-Windows
+          path: TinyTroopers-Windows
 
       - name: Download macOS Artifact
         uses: actions/download-artifact@v4
         with:
           name: TinyTroopers-Client-macOS
+          path: TinyTroopers-macOS
+
+      - name: Create Release Zip Archives
+        run: |
+          cd TinyTroopers-Windows && zip -r ../TinyTroopers-Client-Windows.zip . && cd ..
+          cd TinyTroopers-macOS && zip -r ../TinyTroopers-Client-macOS.zip . && cd ..
 
       - name: Publish Release Assets
         uses: softprops/action-gh-release@v2
