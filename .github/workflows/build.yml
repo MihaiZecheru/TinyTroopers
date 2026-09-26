@@ -103,6 +103,11 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download Windows Artifact
         uses: actions/download-artifact@v4
         with:
@@ -120,7 +125,7 @@ jobs:
           cd TinyTroopers-Windows && zip -r ../TinyTroopers-Client-Windows.zip . && cd ..
           cd TinyTroopers-macOS && zip -r ../TinyTroopers-Client-macOS.zip . && cd ..
 
-      - name: Determine Release Info
+      - name: Determine Release Info & Update Rolling Tag
         id: release_info
         run: |
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
@@ -129,6 +134,8 @@ jobs:
           else
             echo "tag=latest" >> $GITHUB_OUTPUT
             echo "name=Latest Build" >> $GITHUB_OUTPUT
+            git tag -f latest
+            git push -f origin latest
           fi
 
       - name: Publish Release Assets
@@ -136,6 +143,7 @@ jobs:
         with:
           tag_name: ${{ steps.release_info.outputs.tag }}
           name: ${{ steps.release_info.outputs.name }}
+          make_latest: true
           files: |
             TinyTroopers-Client-Windows.zip
             TinyTroopers-Client-macOS.zip
