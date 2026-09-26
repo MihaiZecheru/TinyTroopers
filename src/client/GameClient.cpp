@@ -7,6 +7,8 @@
 
 #include <cstring>
 #include <fstream>
+#include <sstream>
+#include <vector>
 
 namespace {
 constexpr float HelpButtonSize = 42.0F;
@@ -34,10 +36,50 @@ float UiScale() { return static_cast<float>(GetScreenWidth()) / 1280.0f; }
 float Sf(float x) { return x * UiScale(); }
 int Si(float x) { return static_cast<int>(x * UiScale()); }
 
+std::vector<std::string> FormatMessageLines(const std::string& text, int maxLineWidth, int fontSize) {
+    std::vector<std::string> result;
+    std::istringstream stream(text);
+    std::string rawLine;
+    while (std::getline(stream, rawLine)) {
+        if (rawLine.empty()) {
+            result.push_back("");
+            continue;
+        }
+        std::istringstream words(rawLine);
+        std::string word;
+        std::string currentLine;
+        while (words >> word) {
+            std::string testLine = currentLine.empty() ? word : (currentLine + " " + word);
+            if (MeasureText(testLine.c_str(), fontSize) > maxLineWidth && !currentLine.empty()) {
+                result.push_back(currentLine);
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+            }
+        }
+        if (!currentLine.empty()) {
+            result.push_back(currentLine);
+        }
+    }
+    if (result.empty()) {
+        result.push_back("");
+    }
+    return result;
+}
+
 Rectangle MessageModalBounds(const std::string& message) {
-    const int measuredTextWidth = MeasureText(message.c_str(), Si(PopupTextSize));
-    const float modalWidth = std::max(Sf(PopupWidth), static_cast<float>(measuredTextWidth) + Sf(64.0F));
-    const float modalHeight = Sf(PopupHeight);
+    const int font = Si(PopupTextSize);
+    const int maxInnerWidth = Si(560.0F);
+    const auto lines = FormatMessageLines(message, maxInnerWidth, font);
+
+    int maxMeasuredW = 0;
+    for (const auto& line : lines) {
+        maxMeasuredW = std::max(maxMeasuredW, MeasureText(line.c_str(), font));
+    }
+
+    const float modalWidth = std::max(Sf(PopupWidth), static_cast<float>(maxMeasuredW) + Sf(64.0F));
+    const float contentHeight = static_cast<float>(lines.size()) * Sf(26.0F);
+    const float modalHeight = std::max(Sf(PopupHeight), Sf(64.0F) + contentHeight + Sf(64.0F));
     return Rectangle{
         (static_cast<float>(GetScreenWidth()) - modalWidth) * 0.5F,
         (static_cast<float>(GetScreenHeight()) - modalHeight) * 0.5F,
@@ -319,7 +361,7 @@ void GameClient::CreateRoom() {
     connectTimer = 0.0F;
     secondsSinceServerPacket = 0.0F;
     const std::string nameToSend = playerName.empty() ? "Player 1" : playerName;
-    status = network.Connect(serverHost, cfg::ServerPort, nameToSend, "", true) ? "Creating room..." : "Failed to open UDP socket.";
+    status = network.Connect(serverHost, cfg::ServerPort, nameToSend, "", true, true) ? "Creating room..." : "Failed to open UDP socket.";
     network.SendConfig(MakeConfig());
 }
 
@@ -332,7 +374,7 @@ void GameClient::JoinRoom(const std::string& roomCodeInput) {
     connectTimer = 0.0F;
     secondsSinceServerPacket = 0.0F;
     const std::string nameToSend = playerName.empty() ? "Player 2" : playerName;
-    status = network.Connect(serverHost, cfg::ServerPort, nameToSend, roomCodeInput, false) ? "Joining room..." : "Failed to open UDP socket.";
+    status = network.Connect(serverHost, cfg::ServerPort, nameToSend, roomCodeInput, false, true) ? "Joining room..." : "Failed to open UDP socket.";
     network.SendConfig(MakeConfig());
 }
 
@@ -595,9 +637,17 @@ void GameClient::DrawMessagePopup() const {
 
     DrawText("Message", static_cast<int>(modal.x + Sf(24.0F)), static_cast<int>(modal.y + Sf(20.0F)), Si(PopupTitleSize), HelpTextColor);
 
-    const int measuredTextWidth = MeasureText(popupMessage.c_str(), Si(PopupTextSize));
-    const int textX = static_cast<int>(modal.x + (modal.width - static_cast<float>(measuredTextWidth)) * 0.5F);
-    DrawText(popupMessage.c_str(), textX, static_cast<int>(modal.y + Sf(62.0F)), Si(PopupTextSize), HelpTextColor);
+    const int font = Si(PopupTextSize);
+    const int maxInnerWidth = Si(560.0F);
+    const auto lines = FormatMessageLines(popupMessage, maxInnerWidth, font);
+
+    float textY = modal.y + Sf(58.0F);
+    for (const auto& line : lines) {
+        const int measuredW = MeasureText(line.c_str(), font);
+        const int textX = static_cast<int>(modal.x + (modal.width - static_cast<float>(measuredW)) * 0.5F);
+        DrawText(line.c_str(), textX, static_cast<int>(textY), font, HelpTextColor);
+        textY += Sf(26.0F);
+    }
 
     const Rectangle okButton{modal.x + (modal.width - Sf(PopupButtonWidth)) * 0.5F, modal.y + modal.height - Sf(52.0F), Sf(PopupButtonWidth), Sf(PopupButtonHeight)};
     const bool okHover = CheckCollisionPointRec(GetMousePosition(), okButton);

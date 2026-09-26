@@ -10,7 +10,7 @@ public:
     NetworkClient();
     ~NetworkClient();
 
-    bool Connect(const std::string& host, std::uint16_t port, const std::string& playerName, const std::string& roomCode, bool createRoom);
+    bool Connect(const std::string& host, std::uint16_t port, const std::string& playerName, const std::string& roomCode, bool createRoom, bool preferCompact = true);
     void SendConfig(const LobbyConfigPacket& packet);
     void SendInput(const InputPacket& packet);
     void SendStart();

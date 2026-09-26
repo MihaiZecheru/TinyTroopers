@@ -27,6 +27,7 @@ private:
         sockaddr_in address;
         float secondsSinceHeard;
         bool disconnected;
+        bool preferCompact;
     };
 
     UdpSocket socket;

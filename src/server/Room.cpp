@@ -174,6 +174,9 @@ Room::Room()
 std::uint32_t Room::AddOrFindPlayer(const std::string& addressKey, const std::string& requestedName) {
     for (PlayerState& player : players) {
         if (player.addressKey == addressKey) {
+            if (player.connected && !requestedName.empty() && player.name != requestedName) {
+                return 0;
+            }
             if (!requestedName.empty()) {
                 player.name = requestedName;
             }
@@ -307,6 +310,11 @@ bool Room::IsPlayerConnected(std::uint32_t playerId) const {
 bool Room::IsPlayerHost(std::uint32_t playerId) const {
     const PlayerState* player = FindPlayer(playerId);
     return player != nullptr && player->host;
+}
+
+std::string Room::GetPlayerName(std::uint32_t playerId) const {
+    const PlayerState* player = FindPlayer(playerId);
+    return player != nullptr ? player->name : "";
 }
 
 void Room::PushKillFeed(const KillFeedSnapshot& event) {

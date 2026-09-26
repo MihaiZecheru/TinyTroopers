@@ -13,7 +13,8 @@ enum class PacketType : std::uint8_t {
     Snapshot = 5,
     ServerMessage = 6,
     Disconnect = 7,
-    KickPlayer = 8
+    KickPlayer = 8,
+    CompactSnapshot = 9
 };
 
 enum class ScreenId : std::uint8_t {
@@ -147,6 +148,7 @@ struct HelloPacket {
     std::array<char, cfg::NameBytes> name;
     std::array<char, cfg::RoomCodeBytes> roomCode;
     bool createRoom;
+    bool preferCompact;
 };
 
 struct LobbyConfigPacket {
@@ -252,8 +254,10 @@ struct SnapshotPacket {
 
 struct ServerMessagePacket {
     PacketHeader header;
-    std::array<char, 96> text;
+    std::array<char, 256> text;
 };
 
 PacketHeader MakeHeader(PacketType type, std::uint16_t size);
 bool IsValidHeader(const PacketHeader& header, PacketType expectedType);
+int SerializeCompactSnapshot(const SnapshotPacket& src, std::uint8_t* dest, int maxDestSize);
+bool DeserializeCompactSnapshot(const std::uint8_t* src, int srcSize, SnapshotPacket& dest);

@@ -135,12 +135,18 @@ void RoomCreationScreen::Update(GameClient& client) {
             key = GetCharPressed();
         }
 
+        const bool ctrlDown = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL) ||
+                              IsKeyDown(KEY_LEFT_SUPER) || IsKeyDown(KEY_RIGHT_SUPER);
         const bool deleteDown = IsKeyDown(KEY_BACKSPACE) || IsKeyDown(KEY_DELETE);
         const bool deletePressed = IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_DELETE);
         const float dt = GetFrameTime();
 
         if (deletePressed) {
-            PopChar(nameBuffer);
+            if (ctrlDown) {
+                nameBuffer[0] = '\0';
+            } else {
+                PopChar(nameBuffer);
+            }
             deleteHoldTimer = 0.0F;
             deleteRepeatTimer = 0.0F;
         } else if (deleteDown) {
@@ -148,7 +154,11 @@ void RoomCreationScreen::Update(GameClient& client) {
             if (deleteHoldTimer >= KeyRepeatDelay) {
                 deleteRepeatTimer += dt;
                 while (deleteRepeatTimer >= KeyRepeatRate) {
-                    PopChar(nameBuffer);
+                    if (ctrlDown) {
+                        nameBuffer[0] = '\0';
+                    } else {
+                        PopChar(nameBuffer);
+                    }
                     deleteRepeatTimer -= KeyRepeatRate;
                 }
             }

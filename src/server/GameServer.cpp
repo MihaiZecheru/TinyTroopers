@@ -86,17 +86,27 @@ void GameServer::PumpNetwork() {
             }
 
             Room& room = roomsByCode[roomCode];
+            auto existingSession = sessionsByAddress.find(key);
+            if (existingSession != sessionsByAddress.end() && existingSession->second.roomCode == roomCode) {
+                const std::string existingName = room.GetPlayerName(existingSession->second.playerId);
+                if (!existingName.empty() && existingName != playerName && room.IsPlayerConnected(existingSession->second.playerId)) {
+                    std::cout << "[ROOM] Join rejected: Network conflict for '" << playerName << "' (address " << key << " already used by '" << existingName << "' in Room " << roomCode << ")\n";
+                    SendMessage(address, "Another player on your network is already in this room.\nIf you are on the same network, please use LAN IP.");
+                    continue;
+                }
+            }
+
             const std::uint32_t playerId = room.AddOrFindPlayer(key, playerName);
             if (playerId == 0) {
                 std::cout << "[ROOM] Join failed: Room " << roomCode << " is full (Client: " << key << ")\n";
                 SendMessage(address, "Room is full.");
                 continue;
             }
-            sessionsByAddress[key] = ClientSession{roomCode, playerId, address, 0.0F, false};
+            sessionsByAddress[key] = ClientSession{roomCode, playerId, address, 0.0F, false, hello->preferCompact};
             if (createRoom) {
-                std::cout << "[ROOM] Room " << roomCode << " created by host '" << playerName << "' at " << key << " (Player ID: " << playerId << ")\n";
+                std::cout << "[ROOM] Room " << roomCode << " created by host '" << playerName << "' at " << key << " (Player ID: " << playerId << (hello->preferCompact ? ", compact snapshots" : "") << ")\n";
             } else {
-                std::cout << "[ROOM] Player " << playerId << " ('" << playerName << "') joined Room " << roomCode << " from " << key << " (Total: " << room.PlayerCount() << ")\n";
+                std::cout << "[ROOM] Player " << playerId << " ('" << playerName << "') joined Room " << roomCode << " from " << key << " (Total: " << room.PlayerCount() << (hello->preferCompact ? ", compact snapshots" : "") << ")\n";
             }
             SendMessage(address, createRoom ? "Room " + roomCode + " created." : "Joined room " + roomCode + ".");
         } else if (sessionEntry != sessionsByAddress.end()) {
@@ -155,6 +165,14 @@ void GameServer::SendSnapshots() {
             continue;
         }
         const SnapshotPacket snapshot = roomEntry->second.MakeSnapshot(session.playerId);
+        if (session.preferCompact) {
+            std::array<std::uint8_t, cfg::PacketBytes> compactBuffer{};
+            const int compactSize = SerializeCompactSnapshot(snapshot, compactBuffer.data(), static_cast<int>(compactBuffer.size()));
+            if (compactSize > 0) {
+                socket.Send(session.address, compactBuffer.data(), compactSize);
+                continue;
+            }
+        }
         socket.Send(session.address, &snapshot, sizeof(snapshot));
     }
 }

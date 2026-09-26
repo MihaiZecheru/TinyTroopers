@@ -19,7 +19,7 @@ NetworkClient::~NetworkClient() {
     Disconnect();
 }
 
-bool NetworkClient::Connect(const std::string& host, std::uint16_t port, const std::string& playerName, const std::string& roomCode, bool createRoom) {
+bool NetworkClient::Connect(const std::string& host, std::uint16_t port, const std::string& playerName, const std::string& roomCode, bool createRoom, bool preferCompact) {
     impl->connected = impl->socket.Open(0);
     if (!impl->connected) {
         return false;
@@ -30,6 +30,7 @@ bool NetworkClient::Connect(const std::string& host, std::uint16_t port, const s
     std::strncpy(packet.name.data(), playerName.c_str(), packet.name.size() - 1);
     std::strncpy(packet.roomCode.data(), roomCode.c_str(), packet.roomCode.size() - 1);
     packet.createRoom = createRoom;
+    packet.preferCompact = preferCompact;
     return impl->socket.Send(impl->serverAddress, &packet, sizeof(packet));
 }
 
@@ -96,6 +97,10 @@ bool NetworkClient::PollSnapshot(SnapshotPacket& packet) {
         if (received >= static_cast<int>(sizeof(SnapshotPacket)) && IsValidHeader(*header, PacketType::Snapshot)) {
             packet = *reinterpret_cast<const SnapshotPacket*>(bytes.data());
             found = true;
+        } else if (received >= static_cast<int>(sizeof(PacketHeader)) && IsValidHeader(*header, PacketType::CompactSnapshot)) {
+            if (DeserializeCompactSnapshot(bytes.data(), received, packet)) {
+                found = true;
+            }
         } else if (received >= static_cast<int>(sizeof(ServerMessagePacket)) && IsValidHeader(*header, PacketType::ServerMessage)) {
             const ServerMessagePacket* message = reinterpret_cast<const ServerMessagePacket*>(bytes.data());
             impl->lastMessage = message->text.data();
