@@ -25,11 +25,12 @@ constexpr float X = 58.0F;
 constexpr float SmallWidth = 190.0F;
 constexpr float ServerFieldWidth = 480.0F;
 constexpr float FieldHeight = 42.0F;
-constexpr float NameY = 114.0F;
-constexpr float ServerY = 192.0F;
-constexpr float RoomCodeY = 270.0F;
-constexpr float ClassY = 360.0F;
-constexpr float JoinBtnY = 432.0F;
+constexpr float HeaderY = 76.0F;
+constexpr float NameY = 142.0F;
+constexpr float ServerY = 220.0F;
+constexpr float RoomCodeY = 298.0F;
+constexpr float ClassY = 388.0F;
+constexpr float JoinBtnY = 460.0F;
 constexpr float CodeCellWidth = 58.0F;
 constexpr float CodeCellHeight = 50.0F;
 constexpr float CodeCellGap = 10.0F;
@@ -393,12 +394,12 @@ void RoomJoiningScreen::Update(GameClient& client) {
 
 void RoomJoiningScreen::Draw(GameClient& client) const {
     const Vector2 mouse = GetMousePosition();
-    DrawText("Join Room", static_cast<int>(Sf(X)), static_cast<int>(Sf(48.0F)), Si(HeaderSize), TextColor);
+    DrawText("Join Room", static_cast<int>(Sf(X)), static_cast<int>(Sf(HeaderY)), Si(HeaderSize), TextColor);
 
-    DrawText("Username", static_cast<int>(Sf(X)), static_cast<int>(Sf(90.0F)), Si(TextSize), MutedColor);
+    DrawText("Username", static_cast<int>(Sf(X)), static_cast<int>(Sf(118.0F)), Si(TextSize), MutedColor);
     DrawTextField(Rectangle{Sf(X), Sf(NameY), Sf(ServerFieldWidth), Sf(FieldHeight)}, nameBuffer, focus == FieldFocus::Name);
 
-    DrawText("Server URL / IP", static_cast<int>(Sf(X)), static_cast<int>(Sf(168.0F)), Si(TextSize), MutedColor);
+    DrawText("Server URL / IP", static_cast<int>(Sf(X)), static_cast<int>(Sf(196.0F)), Si(TextSize), MutedColor);
     DrawTextField(Rectangle{Sf(X), Sf(ServerY), Sf(ServerFieldWidth), Sf(FieldHeight)}, serverHostBuffer, focus == FieldFocus::ServerHost);
 
     const Rectangle dropdownBtn{Sf(X + ServerFieldWidth - DropdownBtnWidth - 6.0F), Sf(ServerY) + (Sf(FieldHeight) - Sf(DropdownBtnHeight)) * 0.5F, Sf(DropdownBtnWidth), Sf(DropdownBtnHeight)};
@@ -406,7 +407,7 @@ void RoomJoiningScreen::Draw(GameClient& client) const {
     DrawRectangleRounded(dropdownBtn, 0.15F, 6, btnHover ? Color{64, 82, 100, 255} : Color{44, 56, 70, 255});
     DrawDropdownGlyph(dropdownBtn, dropdownOpen);
 
-    DrawText("Room Code", static_cast<int>(Sf(X)), static_cast<int>(Sf(246.0F)), Si(TextSize), MutedColor);
+    DrawText("Room Code", static_cast<int>(Sf(X)), static_cast<int>(Sf(274.0F)), Si(TextSize), MutedColor);
     DrawRectangleRounded(Rectangle{Sf(X), Sf(RoomCodeY), Sf(ServerFieldWidth), Sf(54.0F)}, 0.04F, 8, FieldColor);
     const float totalCellsWidth = static_cast<float>(cfg::RoomCodeLength) * Sf(CodeCellWidth) + static_cast<float>(cfg::RoomCodeLength - 1) * Sf(CodeCellGap);
     const float cellStartX = Sf(X) + (Sf(ServerFieldWidth) - totalCellsWidth) * 0.5F;
@@ -424,9 +425,9 @@ void RoomJoiningScreen::Draw(GameClient& client) const {
     }
 
     const PlayerClass selClass = client.SelectedClass();
-    DrawText("Class", static_cast<int>(Sf(X)), static_cast<int>(Sf(336.0F)), Si(TextSize), MutedColor);
+    DrawText("Class", static_cast<int>(Sf(X)), static_cast<int>(Sf(364.0F)), Si(TextSize), MutedColor);
     DrawText(TextFormat("Select %s", ClassName(selClass)),
-        static_cast<int>(Sf(X + 80.0F)), static_cast<int>(Sf(338.0F)), Si(16), Color{190, 230, 215, 255});
+        static_cast<int>(Sf(X + 80.0F)), static_cast<int>(Sf(366.0F)), Si(16), Color{190, 230, 215, 255});
 
     DrawClassChoice(Rectangle{Sf(X), Sf(ClassY), Sf(SmallWidth), Sf(cfg::ButtonHeight)}, "AK47", PlayerClass::Ak47, selClass == PlayerClass::Ak47);
     DrawClassChoice(Rectangle{Sf(X + 210.0F), Sf(ClassY), Sf(SmallWidth), Sf(cfg::ButtonHeight)}, "M1911", PlayerClass::Pistol, selClass == PlayerClass::Pistol);
@@ -434,7 +435,7 @@ void RoomJoiningScreen::Draw(GameClient& client) const {
     DrawClassChoice(Rectangle{Sf(X + 630.0F), Sf(ClassY), Sf(SmallWidth), Sf(cfg::ButtonHeight)}, "Mossberg", PlayerClass::Shotgun, selClass == PlayerClass::Shotgun);
 
     DrawButton(Rectangle{Sf(X), Sf(JoinBtnY), Sf(cfg::ButtonWidth), Sf(cfg::ButtonHeight)}, "Join Room");
-    DrawText("Use your friend's LAN IP, then enter the room code.", static_cast<int>(Sf(X)), static_cast<int>(Sf(496.0F)), Si(TextSize), MutedColor);
+    DrawText("Use your friend's LAN IP, then enter the room code.", static_cast<int>(Sf(X)), static_cast<int>(Sf(524.0F)), Si(TextSize), MutedColor);
     DrawText("Esc returns to menu", static_cast<int>(Sf(X)), static_cast<int>(GetScreenHeight() - Sf(48.0F)), Si(TextSize), MutedColor);
     DrawText(client.Status().c_str(), static_cast<int>(Sf(X + 370.0F)), static_cast<int>(Sf(JoinBtnY + 13.0F)), Si(TextSize), MutedColor);
 
