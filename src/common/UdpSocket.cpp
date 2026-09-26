@@ -106,7 +106,7 @@ sockaddr_in UdpSocket::MakeAddress(const std::string& rawHost, std::uint16_t def
         host = host.substr(0, slashPos);
     }
 
-    // Strip and parse custom port if specified (e.g., host:42069)
+    // Strip and parse custom port if specified (e.g., host:50147)
     const auto colonPos = host.rfind(':');
     if (colonPos != std::string::npos) {
         const std::string portPart = host.substr(colonPos + 1);
@@ -114,6 +114,11 @@ sockaddr_in UdpSocket::MakeAddress(const std::string& rawHost, std::uint16_t def
             port = static_cast<std::uint16_t>(std::stoul(portPart));
             host = host.substr(0, colonPos);
         } catch (...) {}
+    } else {
+        // Automatically default production domains to the tunnel port
+        if (host == "tiny-troopers.mzecheru.com" || host == "carolyn-wobble.tun.ply.gg") {
+            port = 50147;
+        }
     }
 
     sockaddr_in address{};

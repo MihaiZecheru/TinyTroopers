@@ -21,6 +21,12 @@ constexpr Color FieldColor{35, 42, 52, 255};
 constexpr float RowX = 58.0F;
 constexpr float SmallWidth = 190.0F;
 constexpr float MediumWidth = 250.0F;
+constexpr float HeaderY = 76.0F;
+constexpr float NameY = 142.0F;
+constexpr float ModeY = 224.0F;
+constexpr float ClassY = 362.0F;
+constexpr float MapY = 458.0F;
+constexpr float HostY = 526.0F;
 constexpr float KeyRepeatDelay = 0.35F;
 constexpr float KeyRepeatRate = 0.04F;
 
@@ -101,7 +107,7 @@ void RoomCreationScreen::Update(GameClient& client) {
         return;
     }
 
-    const Rectangle nameFieldRect{Sf(RowX), Sf(116.0F), Sf(cfg::ButtonWidth), Sf(42.0F)};
+    const Rectangle nameFieldRect{Sf(RowX), Sf(NameY), Sf(cfg::ButtonWidth), Sf(42.0F)};
     if (Hit(nameFieldRect)) {
         nameFocus = true;
     } else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -141,11 +147,6 @@ void RoomCreationScreen::Update(GameClient& client) {
         }
     }
 
-    constexpr float ModeY = 198.0F;
-    constexpr float ClassY = 336.0F;
-    constexpr float MapY = 432.0F;
-    constexpr float HostY = 500.0F;
-
     if (Hit(Rectangle{Sf(RowX), Sf(ModeY), Sf(MediumWidth), Sf(cfg::ButtonHeight)})) { client.SetMode(GameMode::FfaTimed); }
     if (Hit(Rectangle{Sf(RowX + 270.0F), Sf(ModeY), Sf(MediumWidth), Sf(cfg::ButtonHeight)})) { client.SetMode(GameMode::FfaScore); }
     if (Hit(Rectangle{Sf(RowX), Sf(ModeY + 56.0F), Sf(MediumWidth), Sf(cfg::ButtonHeight)})) { client.SetMode(GameMode::TdmTimed); }
@@ -182,33 +183,28 @@ void RoomCreationScreen::Update(GameClient& client) {
 }
 
 void RoomCreationScreen::Draw(GameClient& client) const {
-    DrawText("Create Room", static_cast<int>(Sf(RowX)), static_cast<int>(Sf(50.0F)), Si(HeaderSize), TextColor);
+    DrawText("Create Room", static_cast<int>(Sf(RowX)), static_cast<int>(Sf(HeaderY)), Si(HeaderSize), TextColor);
 
-    DrawText("Username", static_cast<int>(Sf(RowX)), static_cast<int>(Sf(92.0F)), Si(TextSize), MutedColor);
-    DrawTextField(Rectangle{Sf(RowX), Sf(116.0F), Sf(cfg::ButtonWidth), Sf(42.0F)}, nameBuffer, nameFocus);
+    DrawText("Username", static_cast<int>(Sf(RowX)), static_cast<int>(Sf(118.0F)), Si(TextSize), MutedColor);
+    DrawTextField(Rectangle{Sf(RowX), Sf(NameY), Sf(cfg::ButtonWidth), Sf(42.0F)}, nameBuffer, nameFocus);
 
-    constexpr float ModeY = 198.0F;
-    constexpr float ClassY = 336.0F;
-    constexpr float MapY = 432.0F;
-    constexpr float HostY = 500.0F;
-
-    DrawText("Mode", static_cast<int>(Sf(RowX)), static_cast<int>(Sf(172.0F)), Si(TextSize), MutedColor);
+    DrawText("Mode", static_cast<int>(Sf(RowX)), static_cast<int>(Sf(198.0F)), Si(TextSize), MutedColor);
     DrawChoice(Rectangle{Sf(RowX), Sf(ModeY), Sf(MediumWidth), Sf(cfg::ButtonHeight)}, "FFA Timed", client.SelectedMode() == GameMode::FfaTimed);
     DrawChoice(Rectangle{Sf(RowX + 270.0F), Sf(ModeY), Sf(MediumWidth), Sf(cfg::ButtonHeight)}, "FFA Score", client.SelectedMode() == GameMode::FfaScore);
     DrawChoice(Rectangle{Sf(RowX), Sf(ModeY + 56.0F), Sf(MediumWidth), Sf(cfg::ButtonHeight)}, "TDM Timed", client.SelectedMode() == GameMode::TdmTimed);
     DrawChoice(Rectangle{Sf(RowX + 270.0F), Sf(ModeY + 56.0F), Sf(MediumWidth), Sf(cfg::ButtonHeight)}, "TDM Score", client.SelectedMode() == GameMode::TdmScore);
 
     const PlayerClass selClass = client.SelectedClass();
-    DrawText("Class", static_cast<int>(Sf(RowX)), static_cast<int>(Sf(310.0F)), Si(TextSize), MutedColor);
+    DrawText("Class", static_cast<int>(Sf(RowX)), static_cast<int>(Sf(336.0F)), Si(TextSize), MutedColor);
     DrawText(TextFormat("Select %s", ClassName(selClass)),
-        static_cast<int>(Sf(RowX + 80.0F)), static_cast<int>(Sf(312.0F)), Si(16), Color{190, 230, 215, 255});
+        static_cast<int>(Sf(RowX + 80.0F)), static_cast<int>(Sf(338.0F)), Si(16), Color{190, 230, 215, 255});
 
     DrawClassChoice(Rectangle{Sf(RowX), Sf(ClassY), Sf(SmallWidth), Sf(cfg::ButtonHeight)}, "AK47", PlayerClass::Ak47, client.SelectedClass() == PlayerClass::Ak47);
     DrawClassChoice(Rectangle{Sf(RowX + 210.0F), Sf(ClassY), Sf(SmallWidth), Sf(cfg::ButtonHeight)}, "M1911", PlayerClass::Pistol, client.SelectedClass() == PlayerClass::Pistol);
     DrawClassChoice(Rectangle{Sf(RowX + 420.0F), Sf(ClassY), Sf(SmallWidth), Sf(cfg::ButtonHeight)}, "KAR98k", PlayerClass::Sniper, client.SelectedClass() == PlayerClass::Sniper);
     DrawClassChoice(Rectangle{Sf(RowX + 630.0F), Sf(ClassY), Sf(SmallWidth), Sf(cfg::ButtonHeight)}, "Mossberg", PlayerClass::Shotgun, client.SelectedClass() == PlayerClass::Shotgun);
 
-    DrawText("Map", static_cast<int>(Sf(RowX)), static_cast<int>(Sf(406.0F)), Si(TextSize), MutedColor);
+    DrawText("Map", static_cast<int>(Sf(RowX)), static_cast<int>(Sf(432.0F)), Si(TextSize), MutedColor);
     DrawChoice(Rectangle{Sf(RowX), Sf(MapY), Sf(SmallWidth), Sf(cfg::ButtonHeight)}, "Map 1", client.SelectedMap() == 0);
     DrawChoice(Rectangle{Sf(RowX + 210.0F), Sf(MapY), Sf(SmallWidth), Sf(cfg::ButtonHeight)}, "Map 2", client.SelectedMap() == 1);
     DrawChoice(Rectangle{Sf(RowX + 420.0F), Sf(MapY), Sf(SmallWidth), Sf(cfg::ButtonHeight)}, "Map 3", client.SelectedMap() == 2);

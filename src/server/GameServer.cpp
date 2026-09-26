@@ -16,15 +16,15 @@ GameServer::GameServer() : snapshotAccumulator(0.0F) {}
 
 bool GameServer::Run() {
     if (!socket.Open(cfg::ServerPort)) {
-        std::cerr << "Failed to bind UDP server on port " << cfg::ServerPort << '\n';
+        std::cerr << "Failed to bind UDP server on port " << cfg::ServerPort << std::endl;
         return false;
     }
-    std::cout << "TinyTroopers server listening on UDP " << cfg::ServerPort << '\n';
+    std::cout << "TinyTroopers server listening on UDP " << cfg::ServerPort << std::endl;
 
     if (httpServer.Open(cfg::ServerPort)) {
-        std::cout << "TinyTroopers HTTP status server listening on TCP " << cfg::ServerPort << '\n';
+        std::cout << "TinyTroopers HTTP status server listening on TCP " << cfg::ServerPort << std::endl;
     } else {
-        std::cerr << "Warning: Failed to bind HTTP status server on TCP port " << cfg::ServerPort << '\n';
+        std::cerr << "Warning: Failed to bind HTTP status server on TCP port " << cfg::ServerPort << std::endl;
     }
 
     using Clock = std::chrono::steady_clock;
