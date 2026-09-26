@@ -78,15 +78,69 @@ jobs:
         run: |
           mkdir -p TinyTroopers-macOS
           
+          BIN_PATH=""
           if [ -f "build/TinyTroopersClient" ]; then
-            cp build/TinyTroopersClient TinyTroopers-macOS/
+            BIN_PATH="build/TinyTroopersClient"
           elif [ -f "build/Release/TinyTroopersClient" ]; then
-            cp build/Release/TinyTroopersClient TinyTroopers-macOS/
+            BIN_PATH="build/Release/TinyTroopersClient"
           fi
           
+          # Standalone binary package
+          cp "$BIN_PATH" TinyTroopers-macOS/TinyTroopersClient
           chmod +x TinyTroopers-macOS/TinyTroopersClient
           cp -r assets TinyTroopers-macOS/
           [ -f "README.md" ] && cp README.md TinyTroopers-macOS/
+          
+          # Create RunGame.command launcher script
+          cat << 'EOF' > TinyTroopers-macOS/RunGame.command
+#!/bin/bash
+DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$DIR"
+chmod +x ./TinyTroopersClient 2>/dev/null || true
+./TinyTroopersClient
+EOF
+          chmod +x TinyTroopers-macOS/RunGame.command
+
+          # Create macOS .app Bundle
+          APP_DIR="TinyTroopers-macOS/TinyTroopers.app"
+          mkdir -p "$APP_DIR/Contents/MacOS"
+          mkdir -p "$APP_DIR/Contents/Resources"
+          
+          cp "$BIN_PATH" "$APP_DIR/Contents/MacOS/TinyTroopersClient"
+          chmod +x "$APP_DIR/Contents/MacOS/TinyTroopersClient"
+          cp -r assets "$APP_DIR/Contents/MacOS/"
+          cp -r assets "$APP_DIR/Contents/Resources/"
+          
+          cat << 'EOF' > "$APP_DIR/Contents/Info.plist"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>TinyTroopersClient</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.tinytroopers.client</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>TinyTroopers</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>11.0</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSSupportsAutomaticGraphicsSwitching</key>
+    <true/>
+</dict>
+</plist>
+EOF
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
@@ -123,7 +177,10 @@ jobs:
       - name: Create Release Zip Archives
         run: |
           cd TinyTroopers-Windows && zip -r ../TinyTroopers-Client-Windows.zip . && cd ..
-          cd TinyTroopers-macOS && zip -r ../TinyTroopers-Client-macOS.zip . && cd ..
+          chmod +x TinyTroopers-macOS/TinyTroopersClient || true
+          chmod +x TinyTroopers-macOS/RunGame.command || true
+          chmod -R +x TinyTroopers-macOS/TinyTroopers.app/Contents/MacOS || true
+          cd TinyTroopers-macOS && zip -ry ../TinyTroopers-Client-macOS.zip . && cd ..
 
       - name: Determine Release Info & Update Rolling Tag
         id: release_info
