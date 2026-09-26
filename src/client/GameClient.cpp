@@ -15,9 +15,9 @@ constexpr float HeaderBarHeight = 64.0F;
 constexpr float HelpModalWidth = 540.0F;
 constexpr float HelpModalHeight = 500.0F;
 constexpr float HelpModalPadding = 28.0F;
-constexpr float PopupWidth = 440.0F;
-constexpr float PopupHeight = 150.0F;
-constexpr float PopupButtonWidth = 110.0F;
+constexpr float PopupWidth = 520.0F;
+constexpr float PopupHeight = 160.0F;
+constexpr float PopupButtonWidth = 120.0F;
 constexpr float PopupButtonHeight = 38.0F;
 constexpr int HelpTitleSize = 30;
 constexpr int HelpTextSize = 20;
@@ -33,6 +33,18 @@ constexpr Color HelpMutedColor{170, 180, 190, 255};
 float UiScale() { return static_cast<float>(GetScreenWidth()) / 1280.0f; }
 float Sf(float x) { return x * UiScale(); }
 int Si(float x) { return static_cast<int>(x * UiScale()); }
+
+Rectangle MessageModalBounds(const std::string& message) {
+    const int measuredTextWidth = MeasureText(message.c_str(), Si(PopupTextSize));
+    const float modalWidth = std::max(Sf(PopupWidth), static_cast<float>(measuredTextWidth) + Sf(64.0F));
+    const float modalHeight = Sf(PopupHeight);
+    return Rectangle{
+        (static_cast<float>(GetScreenWidth()) - modalWidth) * 0.5F,
+        (static_cast<float>(GetScreenHeight()) - modalHeight) * 0.5F,
+        modalWidth,
+        modalHeight
+    };
+}
 
 Rectangle HelpButtonBounds() {
     return Rectangle{
@@ -462,14 +474,9 @@ void GameClient::UpdateMessagePopup() {
     if (!popupOpen) {
         return;
     }
-    const Rectangle modal{
-        (static_cast<float>(GetScreenWidth()) - Sf(PopupWidth)) * 0.5F,
-        (static_cast<float>(GetScreenHeight()) - Sf(PopupHeight)) * 0.5F,
-        Sf(PopupWidth),
-        Sf(PopupHeight)
-    };
-    const Rectangle closeButton{modal.x + modal.width - Sf(46.0F), modal.y + Sf(14.0F), Sf(30.0F), Sf(30.0F)};
-    const Rectangle okButton{modal.x + (modal.width - Sf(PopupButtonWidth)) * 0.5F, modal.y + modal.height - Sf(54.0F), Sf(PopupButtonWidth), Sf(PopupButtonHeight)};
+    const Rectangle modal = MessageModalBounds(popupMessage);
+    const Rectangle closeButton{modal.x + modal.width - Sf(44.0F), modal.y + Sf(14.0F), Sf(30.0F), Sf(30.0F)};
+    const Rectangle okButton{modal.x + (modal.width - Sf(PopupButtonWidth)) * 0.5F, modal.y + modal.height - Sf(52.0F), Sf(PopupButtonWidth), Sf(PopupButtonHeight)};
     if (IsKeyPressed(KEY_ESCAPE) ||
         IsKeyPressed(KEY_ENTER) ||
         (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
@@ -576,26 +583,28 @@ void GameClient::DrawMessagePopup() const {
         return;
     }
 
-    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Color{0, 0, 0, 95});
-    const Rectangle modal{
-        (static_cast<float>(GetScreenWidth()) - Sf(PopupWidth)) * 0.5F,
-        (static_cast<float>(GetScreenHeight()) - Sf(PopupHeight)) * 0.5F,
-        Sf(PopupWidth),
-        Sf(PopupHeight)
-    };
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Color{0, 0, 0, 110});
+    const Rectangle modal = MessageModalBounds(popupMessage);
     DrawRectangleRounded(modal, 0.04F, 12, HelpPanelColor);
     DrawRectangleLinesEx(modal, 2.0F, Color{78, 96, 118, 255});
 
-    const Rectangle closeButton{modal.x + modal.width - Sf(46.0F), modal.y + Sf(14.0F), Sf(30.0F), Sf(30.0F)};
+    const Rectangle closeButton{modal.x + modal.width - Sf(44.0F), modal.y + Sf(14.0F), Sf(30.0F), Sf(30.0F)};
     const bool closeHover = CheckCollisionPointRec(GetMousePosition(), closeButton);
     DrawRectangleRounded(closeButton, 0.18F, 8, closeHover ? Color{128, 58, 58, 255} : Color{70, 78, 90, 255});
     DrawText("X", static_cast<int>(closeButton.x + Sf(8.0F)), static_cast<int>(closeButton.y + Sf(4.0F)), Si(22), HelpTextColor);
 
-    DrawText("Message",        static_cast<int>(modal.x + Sf(24.0F)), static_cast<int>(modal.y + Sf(22.0F)), Si(PopupTitleSize), HelpTextColor);
-    DrawText(popupMessage.c_str(), static_cast<int>(modal.x + Sf(24.0F)), static_cast<int>(modal.y + Sf(66.0F)), Si(PopupTextSize), HelpTextColor);
+    DrawText("Message", static_cast<int>(modal.x + Sf(24.0F)), static_cast<int>(modal.y + Sf(20.0F)), Si(PopupTitleSize), HelpTextColor);
 
-    const Rectangle okButton{modal.x + (modal.width - Sf(PopupButtonWidth)) * 0.5F, modal.y + modal.height - Sf(54.0F), Sf(PopupButtonWidth), Sf(PopupButtonHeight)};
+    const int measuredTextWidth = MeasureText(popupMessage.c_str(), Si(PopupTextSize));
+    const int textX = static_cast<int>(modal.x + (modal.width - static_cast<float>(measuredTextWidth)) * 0.5F);
+    DrawText(popupMessage.c_str(), textX, static_cast<int>(modal.y + Sf(62.0F)), Si(PopupTextSize), HelpTextColor);
+
+    const Rectangle okButton{modal.x + (modal.width - Sf(PopupButtonWidth)) * 0.5F, modal.y + modal.height - Sf(52.0F), Sf(PopupButtonWidth), Sf(PopupButtonHeight)};
     const bool okHover = CheckCollisionPointRec(GetMousePosition(), okButton);
     DrawRectangleRounded(okButton, 0.08F, 8, okHover ? Color{65, 145, 116, 255} : Color{48, 118, 96, 255});
-    DrawText("OK", static_cast<int>(okButton.x + Sf(39.0F)), static_cast<int>(okButton.y + Sf(9.0F)), Si(PopupTextSize), HelpTextColor);
+
+    const int okWidth = MeasureText("OK", Si(PopupTextSize));
+    const int okX = static_cast<int>(okButton.x + (okButton.width - static_cast<float>(okWidth)) * 0.5F);
+    const int okY = static_cast<int>(okButton.y + (okButton.height - static_cast<float>(Si(PopupTextSize))) * 0.5F - Sf(1.0F));
+    DrawText("OK", okX, okY, Si(PopupTextSize), HelpTextColor);
 }

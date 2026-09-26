@@ -29,6 +29,8 @@ constexpr float MapY = 458.0F;
 constexpr float HostY = 526.0F;
 constexpr float KeyRepeatDelay = 0.35F;
 constexpr float KeyRepeatRate = 0.04F;
+constexpr const char* LanServerHost = "127.0.0.1";
+constexpr const char* ProductionServerHost = "tiny-troopers.mzecheru.com";
 
 float UiScale() { return static_cast<float>(GetScreenWidth()) / 1280.0f; }
 float Sf(float x) { return x * UiScale(); }
@@ -38,10 +40,11 @@ bool Hit(Rectangle bounds) {
     return CheckCollisionPointRec(GetMousePosition(), bounds) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
 
-void DrawChoice(Rectangle bounds, const char* text, bool active) {
+void DrawChoice(Rectangle bounds, const char* text, bool active, int fontSize = TextSize) {
     const bool hover = CheckCollisionPointRec(GetMousePosition(), bounds);
     DrawRectangleRounded(bounds, 0.06F, 8, active ? ActiveColor : (hover ? Color{68, 82, 101, 255} : ButtonColor));
-    DrawText(text, static_cast<int>(bounds.x + Sf(14.0F)), static_cast<int>(bounds.y + Sf(13.0F)), Si(TextSize), TextColor);
+    const float offsetY = (fontSize < TextSize) ? 12.0F : 13.0F;
+    DrawText(text, static_cast<int>(bounds.x + Sf(14.0F)), static_cast<int>(bounds.y + Sf(offsetY)), Si(static_cast<float>(fontSize)), TextColor);
 }
 
 void DrawClassChoice(Rectangle bounds, const char* text, PlayerClass playerClass, bool active) {
@@ -97,6 +100,9 @@ void RoomCreationScreen::Update(GameClient& client) {
         } else {
             std::strncpy(nameBuffer, "Player 1", sizeof(nameBuffer) - 1);
         }
+        if (client.ServerHost().empty() || (client.ServerHost() != ProductionServerHost && client.ServerHost() != LanServerHost)) {
+            client.SetServerHost(LanServerHost);
+        }
     }
 
     if (IsKeyPressed(KEY_ESCAPE)) {
@@ -113,6 +119,11 @@ void RoomCreationScreen::Update(GameClient& client) {
     } else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         nameFocus = false;
     }
+
+    const Rectangle lanBtnRect{Sf(RowX + 360.0F), Sf(NameY), Sf(150.0F), Sf(42.0F)};
+    const Rectangle prodBtnRect{Sf(RowX + 525.0F), Sf(NameY), Sf(295.0F), Sf(42.0F)};
+    if (Hit(lanBtnRect)) { client.SetServerHost(LanServerHost); }
+    if (Hit(prodBtnRect)) { client.SetServerHost(ProductionServerHost); }
 
     if (nameFocus) {
         int key = GetCharPressed();
@@ -187,6 +198,11 @@ void RoomCreationScreen::Draw(GameClient& client) const {
 
     DrawText("Username", static_cast<int>(Sf(RowX)), static_cast<int>(Sf(118.0F)), Si(TextSize), MutedColor);
     DrawTextField(Rectangle{Sf(RowX), Sf(NameY), Sf(cfg::ButtonWidth), Sf(42.0F)}, nameBuffer, nameFocus);
+
+    const bool isLan = (client.ServerHost() != ProductionServerHost);
+    DrawText("Host Location", static_cast<int>(Sf(RowX + 360.0F)), static_cast<int>(Sf(118.0F)), Si(TextSize), MutedColor);
+    DrawChoice(Rectangle{Sf(RowX + 360.0F), Sf(NameY), Sf(150.0F), Sf(42.0F)}, "LAN", isLan);
+    DrawChoice(Rectangle{Sf(RowX + 525.0F), Sf(NameY), Sf(295.0F), Sf(42.0F)}, "tiny-troopers.mzecheru.com", !isLan, 17);
 
     DrawText("Mode", static_cast<int>(Sf(RowX)), static_cast<int>(Sf(198.0F)), Si(TextSize), MutedColor);
     DrawChoice(Rectangle{Sf(RowX), Sf(ModeY), Sf(MediumWidth), Sf(cfg::ButtonHeight)}, "FFA Timed", client.SelectedMode() == GameMode::FfaTimed);
