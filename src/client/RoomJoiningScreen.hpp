@@ -26,7 +26,7 @@ private:
 
     char nameBuffer[cfg::NameBytes];
     char roomCodeBuffer[cfg::RoomCodeBytes];
-    char serverHostBuffer[48];
+    char serverHostBuffer[128];
     FieldFocus focus;
 
     float deleteHoldTimer;

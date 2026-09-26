@@ -23,7 +23,7 @@ constexpr Color ActiveColor{48, 118, 96, 255};
 constexpr Color FieldColor{35, 42, 52, 255};
 constexpr float X = 58.0F;
 constexpr float SmallWidth = 190.0F;
-constexpr float ServerFieldWidth = 432.0F;
+constexpr float ServerFieldWidth = 480.0F;
 constexpr float FieldHeight = 42.0F;
 constexpr float NameY = 114.0F;
 constexpr float ServerY = 192.0F;
@@ -34,6 +34,7 @@ constexpr float CodeCellWidth = 58.0F;
 constexpr float CodeCellHeight = 50.0F;
 constexpr float CodeCellGap = 10.0F;
 constexpr const char* DefaultServerHost = "127.0.0.1";
+constexpr const char* ProductionServerHost = "https://tiny-troopers.mzecheru.com";
 constexpr const char* SavedServersFile = "saved_servers.txt";
 constexpr float DropdownBtnWidth = 34.0F;
 constexpr float DropdownBtnHeight = 34.0F;
@@ -108,7 +109,9 @@ void DrawClassChoice(Rectangle bounds, const char* text, PlayerClass playerClass
 void DrawTextField(Rectangle bounds, const char* text, bool active) {
     DrawRectangleRounded(bounds, 0.05F, 8, FieldColor);
     DrawRectangleLinesEx(bounds, active ? 2.0F : 1.0F, active ? Color{92, 168, 135, 255} : Color{78, 96, 118, 255});
-    DrawText(text, static_cast<int>(bounds.x + Sf(14.0F)), static_cast<int>(bounds.y + Sf(11.0F)), Si(TextSize), TextColor);
+    const int scaledSize = (std::strlen(text) > 22) ? Si(16) : Si(TextSize);
+    const float offsetY = (std::strlen(text) > 22) ? 13.0F : 11.0F;
+    DrawText(text, static_cast<int>(bounds.x + Sf(14.0F)), static_cast<int>(bounds.y + Sf(offsetY)), scaledSize, TextColor);
 }
 
 void DrawDropdownGlyph(Rectangle bounds, bool open) {
@@ -132,7 +135,7 @@ void DrawDropdownGlyph(Rectangle bounds, bool open) {
 }
 
 bool IsServerHostChar(char value) {
-    return (value >= '0' && value <= '9') || value == '.';
+    return std::isalnum(static_cast<unsigned char>(value)) || value == '.' || value == '-' || value == ':' || value == '/';
 }
 
 bool IsValidNameChar(char c) {
@@ -181,8 +184,11 @@ void RoomJoiningScreen::LoadServerHistory() {
             }
         }
     }
-    if (savedServers.empty()) {
-        savedServers.push_back(DefaultServerHost);
+    if (std::find(savedServers.begin(), savedServers.end(), DefaultServerHost) == savedServers.end()) {
+        savedServers.insert(savedServers.begin(), DefaultServerHost);
+    }
+    if (std::find(savedServers.begin(), savedServers.end(), ProductionServerHost) == savedServers.end()) {
+        savedServers.push_back(ProductionServerHost);
     }
 }
 
@@ -221,12 +227,8 @@ RoomJoiningScreen::RoomJoiningScreen()
       initialized(false),
       savedServers{} {
     LoadServerHistory();
-    if (!savedServers.empty()) {
-        std::strncpy(serverHostBuffer, savedServers.front().c_str(), sizeof(serverHostBuffer) - 1);
-        serverHostBuffer[sizeof(serverHostBuffer) - 1] = '\0';
-    } else {
-        std::strncpy(serverHostBuffer, DefaultServerHost, sizeof(serverHostBuffer) - 1);
-    }
+    std::strncpy(serverHostBuffer, DefaultServerHost, sizeof(serverHostBuffer) - 1);
+    serverHostBuffer[sizeof(serverHostBuffer) - 1] = '\0';
 }
 
 void RoomJoiningScreen::Update(GameClient& client) {
@@ -396,7 +398,7 @@ void RoomJoiningScreen::Draw(GameClient& client) const {
     DrawText("Username", static_cast<int>(Sf(X)), static_cast<int>(Sf(90.0F)), Si(TextSize), MutedColor);
     DrawTextField(Rectangle{Sf(X), Sf(NameY), Sf(ServerFieldWidth), Sf(FieldHeight)}, nameBuffer, focus == FieldFocus::Name);
 
-    DrawText("Server IP", static_cast<int>(Sf(X)), static_cast<int>(Sf(168.0F)), Si(TextSize), MutedColor);
+    DrawText("Server URL / IP", static_cast<int>(Sf(X)), static_cast<int>(Sf(168.0F)), Si(TextSize), MutedColor);
     DrawTextField(Rectangle{Sf(X), Sf(ServerY), Sf(ServerFieldWidth), Sf(FieldHeight)}, serverHostBuffer, focus == FieldFocus::ServerHost);
 
     const Rectangle dropdownBtn{Sf(X + ServerFieldWidth - DropdownBtnWidth - 6.0F), Sf(ServerY) + (Sf(FieldHeight) - Sf(DropdownBtnHeight)) * 0.5F, Sf(DropdownBtnWidth), Sf(DropdownBtnHeight)};
@@ -448,7 +450,9 @@ void RoomJoiningScreen::Draw(GameClient& client) const {
             if (itemHover) {
                 DrawRectangleRec(Rectangle{itemRect.x + 2.0F, itemRect.y + 2.0F, itemRect.width - 4.0F, itemRect.height - 4.0F}, Color{44, 78, 66, 255});
             }
-            DrawText(savedServers[i].c_str(), static_cast<int>(itemRect.x + Sf(14.0F)), static_cast<int>(itemRect.y + Sf(10.0F)), Si(TextSize), TextColor);
+            const int itemTextSize = (savedServers[i].size() > 22) ? Si(16) : Si(TextSize);
+            const float itemOffsetY = (savedServers[i].size() > 22) ? 11.0F : 10.0F;
+            DrawText(savedServers[i].c_str(), static_cast<int>(itemRect.x + Sf(14.0F)), static_cast<int>(itemRect.y + Sf(itemOffsetY)), itemTextSize, TextColor);
             if (i > 0) {
                 DrawLineEx(Vector2{itemRect.x + Sf(8.0F), itemRect.y}, Vector2{itemRect.x + itemRect.width - Sf(8.0F), itemRect.y}, 1.0F, Color{50, 60, 74, 255});
             }

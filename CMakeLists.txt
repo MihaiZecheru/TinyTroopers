@@ -57,7 +57,15 @@ if(NOT BUILD_SERVER_ONLY)
         set(raylib_FOUND TRUE)
     endif()
     if(NOT raylib_FOUND)
-        message(FATAL_ERROR "raylib was not found. Install official raylib to C:/raylib or set raylib_DIR/CMAKE_PREFIX_PATH, or run cmake -DBUILD_SERVER_ONLY=ON.")
+        message(STATUS "raylib not found locally, fetching via FetchContent...")
+        include(FetchContent)
+        set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+        FetchContent_Declare(
+            raylib
+            GIT_REPOSITORY https://github.com/raysan5/raylib.git
+            GIT_TAG 5.5
+        )
+        FetchContent_MakeAvailable(raylib)
     endif()
 
     add_executable(TinyTroopersClient

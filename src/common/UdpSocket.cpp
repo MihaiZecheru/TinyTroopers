@@ -89,7 +89,33 @@ int UdpSocket::Receive(sockaddr_in& address, void* data, int size) {
     return received > 0 ? received : 0;
 }
 
-sockaddr_in UdpSocket::MakeAddress(const std::string& host, std::uint16_t port) {
+sockaddr_in UdpSocket::MakeAddress(const std::string& rawHost, std::uint16_t defaultPort) {
+    std::string host = rawHost;
+    std::uint16_t port = defaultPort;
+
+    // Strip http:// or https:// prefix
+    if (host.rfind("https://", 0) == 0) {
+        host = host.substr(8);
+    } else if (host.rfind("http://", 0) == 0) {
+        host = host.substr(7);
+    }
+
+    // Strip trailing slash or URL path
+    const auto slashPos = host.find('/');
+    if (slashPos != std::string::npos) {
+        host = host.substr(0, slashPos);
+    }
+
+    // Strip and parse custom port if specified (e.g., host:42069)
+    const auto colonPos = host.rfind(':');
+    if (colonPos != std::string::npos) {
+        const std::string portPart = host.substr(colonPos + 1);
+        try {
+            port = static_cast<std::uint16_t>(std::stoul(portPart));
+            host = host.substr(0, colonPos);
+        } catch (...) {}
+    }
+
     sockaddr_in address{};
     address.sin_family = AF_INET;
     address.sin_port = htons(port);

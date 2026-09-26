@@ -1,0 +1,126 @@
+name: Build and Package Client
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows Client
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build TinyTroopersClient
+        run: |
+          cmake --build build --config Release --target TinyTroopersClient
+
+      - name: Package Windows Release
+        shell: pwsh
+        run: |
+          $packageDir = "TinyTroopers-Windows"
+          New-Item -ItemType Directory -Path $packageDir -Force
+          
+          # Copy executable (search both MSVC Release subfolder and root build folder)
+          if (Test-Path "build/Release/TinyTroopersClient.exe") {
+              Copy-Item "build/Release/TinyTroopersClient.exe" -Destination "$packageDir/"
+          } elseif (Test-Path "build/TinyTroopersClient.exe") {
+              Copy-Item "build/TinyTroopersClient.exe" -Destination "$packageDir/"
+          }
+          
+          # Copy assets and readme
+          Copy-Item -Recurse "assets" -Destination "$packageDir/"
+          if (Test-Path "README.md") {
+              Copy-Item "README.md" -Destination "$packageDir/"
+          }
+          
+          Compress-Archive -Path "$packageDir/*" -DestinationPath "TinyTroopers-Client-Windows.zip" -Force
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TinyTroopers-Client-Windows
+          path: TinyTroopers-Client-Windows.zip
+
+  build-macos:
+    name: Build macOS Client
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install cmake raylib
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$(brew --prefix)"
+
+      - name: Build TinyTroopersClient
+        run: |
+          cmake --build build --config Release --target TinyTroopersClient
+
+      - name: Package macOS Release
+        run: |
+          mkdir -p TinyTroopers-macOS
+          
+          if [ -f "build/TinyTroopersClient" ]; then
+            cp build/TinyTroopersClient TinyTroopers-macOS/
+          elif [ -f "build/Release/TinyTroopersClient" ]; then
+            cp build/Release/TinyTroopersClient TinyTroopers-macOS/
+          fi
+          
+          chmod +x TinyTroopers-macOS/TinyTroopersClient
+          cp -r assets TinyTroopers-macOS/
+          [ -f "README.md" ] && cp README.md TinyTroopers-macOS/
+          
+          zip -r TinyTroopers-Client-macOS.zip TinyTroopers-macOS
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TinyTroopers-Client-macOS
+          path: TinyTroopers-Client-macOS.zip
+
+  create-release:
+    name: Create GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: TinyTroopers-Client-Windows
+
+      - name: Download macOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: TinyTroopers-Client-macOS
+
+      - name: Publish Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            TinyTroopers-Client-Windows.zip
+            TinyTroopers-Client-macOS.zip
+          generate_release_notes: true
