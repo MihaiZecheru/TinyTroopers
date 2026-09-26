@@ -326,16 +326,28 @@ void RoomJoiningScreen::Update(GameClient& client) {
         key = GetCharPressed();
     }
 
+    const bool ctrlDown = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL) ||
+                          IsKeyDown(KEY_LEFT_SUPER) || IsKeyDown(KEY_RIGHT_SUPER);
     const bool deleteDown = IsKeyDown(KEY_BACKSPACE) || IsKeyDown(KEY_DELETE);
     const bool deletePressed = IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_DELETE);
 
     auto doDelete = [&]() {
-        if (focus == FieldFocus::Name) {
-            PopChar(nameBuffer);
-        } else if (focus == FieldFocus::ServerHost) {
-            PopChar(serverHostBuffer);
+        if (ctrlDown) {
+            if (focus == FieldFocus::Name) {
+                nameBuffer[0] = '\0';
+            } else if (focus == FieldFocus::ServerHost) {
+                serverHostBuffer[0] = '\0';
+            } else {
+                roomCodeBuffer[0] = '\0';
+            }
         } else {
-            PopChar(roomCodeBuffer);
+            if (focus == FieldFocus::Name) {
+                PopChar(nameBuffer);
+            } else if (focus == FieldFocus::ServerHost) {
+                PopChar(serverHostBuffer);
+            } else {
+                PopChar(roomCodeBuffer);
+            }
         }
     };
 

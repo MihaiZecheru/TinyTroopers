@@ -17,6 +17,7 @@ public:
     void KickPlayer(std::uint32_t playerId);
     bool IsPlayerConnected(std::uint32_t playerId) const;
     bool IsPlayerHost(std::uint32_t playerId) const;
+    std::string GetPlayerName(std::uint32_t playerId) const;
     std::size_t PlayerCount() const;
     void Configure(std::uint32_t playerId, const LobbyConfigPacket& packet);
     std::string TryStart(std::uint32_t playerId);
