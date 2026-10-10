@@ -126,19 +126,20 @@ void RoomCreationScreen::Update(GameClient& client) {
     if (Hit(prodBtnRect)) { client.SetServerHost(ProductionServerHost); }
 
     if (nameFocus) {
+        const bool ctrlDown = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL) ||
+                              IsKeyDown(KEY_LEFT_SUPER) || IsKeyDown(KEY_RIGHT_SUPER);
         int key = GetCharPressed();
         while (key > 0) {
             const char typed = static_cast<char>(key);
-            if (IsValidNameChar(typed) && std::strlen(nameBuffer) < 16) {
+            if (!ctrlDown && IsValidNameChar(typed) && std::strlen(nameBuffer) < 16) {
                 PushChar(nameBuffer, sizeof(nameBuffer), typed);
             }
             key = GetCharPressed();
         }
 
-        const bool ctrlDown = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL) ||
-                              IsKeyDown(KEY_LEFT_SUPER) || IsKeyDown(KEY_RIGHT_SUPER);
-        const bool deleteDown = IsKeyDown(KEY_BACKSPACE) || IsKeyDown(KEY_DELETE);
-        const bool deletePressed = IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_DELETE);
+        const bool ctrlW = ctrlDown && IsKeyPressed(KEY_W);
+        const bool deleteDown = IsKeyDown(KEY_BACKSPACE) || IsKeyDown(KEY_DELETE) || (ctrlDown && IsKeyDown(KEY_W));
+        const bool deletePressed = IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_DELETE) || ctrlW;
         const float dt = GetFrameTime();
 
         if (deletePressed) {

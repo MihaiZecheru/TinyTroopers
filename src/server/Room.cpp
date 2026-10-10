@@ -3,6 +3,7 @@
 #include "common/Constants.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -13,10 +14,10 @@ constexpr float AkFireSeconds = 0.105F;
 constexpr float PistolFireSeconds = 0.0F;
 constexpr float SniperFireSeconds = 1.25F;
 constexpr float ShotgunFireSeconds = 0.62F;
-constexpr float AkBulletSpeed = 2100.0F * 1.40F;
-constexpr float PistolBulletSpeed = 2100.0F * 1.40F;
-constexpr float SniperBulletSpeed = 4300.0F;
-constexpr float ShotgunBulletSpeed = 2100.0F;
+constexpr float AkBulletSpeed = 2100.0F * 1.40F * 1.50F;
+constexpr float PistolBulletSpeed = 2100.0F * 1.40F * 1.50F;
+constexpr float SniperBulletSpeed = 4300.0F * 1.50F;
+constexpr float ShotgunBulletSpeed = 2100.0F * 1.50F;
 constexpr float AkDamage = 18.0F;
 constexpr float PistolDamage = 14.0F;
 constexpr float SniperDamage = cfg::PlayerMaxHealth;
@@ -221,7 +222,7 @@ std::uint32_t Room::AddOrFindPlayer(const std::string& addressKey, const std::st
     const Vec2 spawn = FurthestCornerSpawn(id);
     players.push_back(PlayerState{id, finalName, addressKey, spawn, Vec2(1.0F, 0.0F),
         cfg::PlayerMaxHealth, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, Vec2(1.0F, 0.0F), spawn, 0, 0, ClassAmmo(playerClass), 0, 0, playerClass,
-        host ? TeamId::Red : TeamId::Blue, true, host, ClassMaxGrenades(playerClass), ClassMaxBarriers(playerClass), true, 0.0F, 0.0F});
+        host ? TeamId::Red : TeamId::Blue, true, host, ClassMaxGrenades(playerClass), ClassMaxBarriers(playerClass), true, 0.0F, 0.0F, 0});
     return id;
 }
 
@@ -372,6 +373,19 @@ void Room::ApplyInput(std::uint32_t playerId, const InputPacket& packet) {
     PlayerState* player = FindPlayer(playerId);
     if (player == nullptr) {
         return;
+    }
+    if (packet.serverTimeAck > 0) {
+        using Clock = std::chrono::steady_clock;
+        const auto now = Clock::now();
+        const std::uint32_t nowMs = static_cast<std::uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
+        if (nowMs >= packet.serverTimeAck) {
+            const std::uint32_t rtt = nowMs - packet.serverTimeAck;
+            if (player->ping == 0) {
+                player->ping = static_cast<std::uint16_t>(std::min<std::uint32_t>(rtt, 999));
+            } else {
+                player->ping = static_cast<std::uint16_t>(std::min<std::uint32_t>(static_cast<std::uint32_t>(player->ping * 0.7F + rtt * 0.3F), 999));
+            }
+        }
     }
     player->inputFlags = packet.flags;
     player->aim = Vec2(packet.aimX, packet.aimY).Normalized();
@@ -700,6 +714,9 @@ SnapshotPacket Room::MakeSnapshot(std::uint32_t playerId) const {
     packet.winnerPlayerId = winnerPlayerId;
     packet.winnerTeam = winnerTeam;
     packet.matchEndedByForfeit = matchEndedByForfeit;
+    using Clock = std::chrono::steady_clock;
+    const auto now = Clock::now();
+    packet.serverTime = static_cast<std::uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
     for (std::size_t index = 0; index < packet.playerCount; ++index) {
         const PlayerState& player = players[index];
         std::array<char, cfg::NameBytes> nameArr{};
@@ -707,7 +724,7 @@ SnapshotPacket Room::MakeSnapshot(std::uint32_t playerId) const {
         nameArr[cfg::NameBytes - 1] = '\0';
         packet.players[index] = PlayerSnapshot{player.id, player.position.x, player.position.y, player.aim.x, player.aim.y,
             player.health, player.kills, player.deaths, player.ammo, player.playerClass, player.team, player.alive, player.host, player.connected,
-            player.grenades, player.barriers, player.invulnerableRemaining, nameArr};
+            player.grenades, player.barriers, player.invulnerableRemaining, player.ping, nameArr};
         if (player.team == TeamId::Red) { packet.redScore += player.kills; }
         if (player.team == TeamId::Blue) { packet.blueScore += player.kills; }
     }
@@ -859,8 +876,8 @@ void Room::DamagePlayer(PlayerState& target, PlayerState* attacker, float damage
     if (attacker != nullptr && !isSuicide) {
         ++attacker->kills;
         attacker->health = std::min(cfg::PlayerMaxHealth, attacker->health + 0.5F * cfg::PlayerMaxHealth);
-        attacker->grenades = ClassMaxGrenades(attacker->playerClass);
-        attacker->barriers = ClassMaxBarriers(attacker->playerClass);
+        attacker->grenades = static_cast<std::uint8_t>(std::min<int>(attacker->grenades + 1, ClassMaxGrenades(attacker->playerClass)));
+        attacker->barriers = static_cast<std::uint8_t>(std::min<int>(attacker->barriers + 1, ClassMaxBarriers(attacker->playerClass)));
     }
 
     KillFeedSnapshot event{};

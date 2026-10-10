@@ -51,6 +51,7 @@ public:
     bool HasNewSnapshot() const;
     void ToggleWindowedFullscreen();
     bool IsWindowedFullscreen() const;
+    std::uint32_t LastServerTime() const { return lastServerTime; }
 
 private:
     void UpdateHelpOverlay();
@@ -75,6 +76,7 @@ private:
     float secondsSinceServerPacket;
     float connectTimer;
     float heartbeatAccumulator;
+    std::uint32_t lastServerTime{0};
     bool connecting;
     bool hostHint;
     bool joinedRoomConfirmed;

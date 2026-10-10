@@ -217,6 +217,14 @@ GameplayScreen::GameplayScreen()
       localRespawnTimer(0.0F),
       playerInterp{},
       localInterpPos{0.0F, 0.0F},
+      deathEffects{},
+      previousPlayerAlive{},
+      previousPlayerPos{},
+      previousPlayerRot{},
+      previousPlayerId{},
+      localKillBannerTimer(0.0F),
+      pingDisplayTimer(1.0F),
+      displayedPings{},
       mapTexture{},
       cachedMapIndex(-1) {}
 
@@ -259,6 +267,14 @@ void GameplayScreen::Reset() {
     lastKillEventId = 0;
     playerInterp.fill(PlayerInterp{});
     localInterpPos = Vector2{0.0F, 0.0F};
+    deathEffects.clear();
+    previousPlayerAlive.fill(false);
+    previousPlayerPos.fill(Vector2{0.0F, 0.0F});
+    previousPlayerRot.fill(0.0F);
+    previousPlayerId.fill(0);
+    localKillBannerTimer = 0.0F;
+    pingDisplayTimer = 1.0F;
+    displayedPings.clear();
     if (mapTexture.id != 0) {
         UnloadRenderTexture(mapTexture);
         mapTexture = RenderTexture2D{};
@@ -365,7 +381,73 @@ void GameplayScreen::Update(GameClient& client) {
     const SnapshotPacket& snapshot = client.Snapshot();
     const PlayerSnapshot local = client.LocalPlayer();
     UpdateInterpolation(snapshot, dt, client.HasNewSnapshot());
-    UpdateKillFeed(snapshot, dt);
+    UpdateKillFeed(snapshot, dt, local, client);
+
+    if (localKillBannerTimer > 0.0F) {
+        localKillBannerTimer = std::max(0.0F, localKillBannerTimer - dt);
+    }
+
+    pingDisplayTimer += dt;
+    if (pingDisplayTimer >= 1.0F) {
+        pingDisplayTimer = 0.0F;
+        for (std::size_t i = 0; i < snapshot.playerCount && i < cfg::MaxPlayers; ++i) {
+            displayedPings[snapshot.players[i].id] = snapshot.players[i].ping;
+        }
+    } else {
+        for (std::size_t i = 0; i < snapshot.playerCount && i < cfg::MaxPlayers; ++i) {
+            if (displayedPings.find(snapshot.players[i].id) == displayedPings.end()) {
+                displayedPings[snapshot.players[i].id] = snapshot.players[i].ping;
+            }
+        }
+    }
+
+    for (auto it = deathEffects.begin(); it != deathEffects.end(); ) {
+        it->timer += dt;
+        if (it->timer >= it->maxDuration) {
+            it = deathEffects.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    if (snapshot.matchRunning) {
+        for (std::size_t i = 0; i < snapshot.playerCount && i < cfg::MaxPlayers; ++i) {
+            const PlayerSnapshot& p = snapshot.players[i];
+            if (previousPlayerId[i] == p.id && previousPlayerAlive[i] && !p.alive) {
+                // Player was killed! Spawn death effect
+                DeathEffect de{};
+                de.position = previousPlayerPos[i];
+                if (de.position.x == 0.0F && de.position.y == 0.0F) {
+                    de.position = Vector2{p.x, p.y};
+                }
+                de.rotation = previousPlayerRot[i];
+                de.timer = 0.0F;
+                de.maxDuration = cfg::RespawnSeconds;
+                deathEffects.push_back(de);
+            }
+        }
+        for (std::size_t i = 0; i < snapshot.playerCount && i < cfg::MaxPlayers; ++i) {
+            const PlayerSnapshot& p = snapshot.players[i];
+            previousPlayerAlive[i] = p.alive;
+            previousPlayerId[i] = p.id;
+            Vector2 pPos{p.x, p.y};
+            float pRot = std::atan2(p.aimY, p.aimX) * 180.0F / Pi - 90.0F;
+            for (const auto& entry : playerInterp) {
+                if (entry.active && entry.id == p.id) {
+                    pPos = entry.currentPos;
+                    pRot = entry.currentRotation;
+                    break;
+                }
+            }
+            if (p.alive) {
+                previousPlayerPos[i] = pPos;
+                previousPlayerRot[i] = pRot;
+            }
+        }
+    } else {
+        previousPlayerAlive.fill(false);
+        deathEffects.clear();
+    }
 
     if (fireBlockTimer > 0.0F) {
         fireBlockTimer = std::max(0.0F, fireBlockTimer - dt);
@@ -413,6 +495,7 @@ void GameplayScreen::Update(GameClient& client) {
             InputPacket packet{};
             packet.header = MakeHeader(PacketType::Input, sizeof(InputPacket));
             packet.sequence = ++sequence;
+            packet.serverTimeAck = client.LastServerTime();
             client.Network().SendInput(packet);
             sendAccumulator = 0.0F;
         }
@@ -451,6 +534,7 @@ void GameplayScreen::Update(GameClient& client) {
             InputPacket packet{};
             packet.header = MakeHeader(PacketType::Input, sizeof(InputPacket));
             packet.sequence = ++sequence;
+            packet.serverTimeAck = client.LastServerTime();
             client.Network().SendInput(packet);
             sendAccumulator = 0.0F;
         }
@@ -489,6 +573,7 @@ void GameplayScreen::Update(GameClient& client) {
             InputPacket packet{};
             packet.header = MakeHeader(PacketType::Input, sizeof(InputPacket));
             packet.sequence = ++sequence;
+            packet.serverTimeAck = client.LastServerTime();
             client.Network().SendInput(packet);
             sendAccumulator = 0.0F;
         }
@@ -509,6 +594,7 @@ void GameplayScreen::Update(GameClient& client) {
             InputPacket packet{};
             packet.header = MakeHeader(PacketType::Input, sizeof(InputPacket));
             packet.sequence = ++sequence;
+            packet.serverTimeAck = client.LastServerTime();
             client.Network().SendInput(packet);
             sendAccumulator = 0.0F;
         }
@@ -697,6 +783,7 @@ void GameplayScreen::Update(GameClient& client) {
         InputPacket packet{};
         packet.header = MakeHeader(PacketType::Input, sizeof(InputPacket));
         packet.sequence = ++sequence;
+        packet.serverTimeAck = client.LastServerTime();
         packet.flags = flags;
         packet.aimX = aimDelta.x / aimLength;
         packet.aimY = aimDelta.y / aimLength;
@@ -786,6 +873,17 @@ void GameplayScreen::Draw(GameClient& client) const {
             DrawCircleLines(static_cast<int>(grenade.x), static_cast<int>(grenade.y), cfg::GrenadeExplosionRadius * (1.0F - fuseRatio), GrenadeFuseColor);
         }
     }
+
+    for (const DeathEffect& death : deathEffects) {
+        if (death.position.x < cullBox.x || death.position.x > cullBox.x + cullBox.width ||
+            death.position.y < cullBox.y || death.position.y > cullBox.y + cullBox.height) {
+            continue;
+        }
+        const float fadeStart = death.maxDuration - 1.0F;
+        const float alpha = (death.timer < fadeStart) ? 1.0F : std::clamp((death.maxDuration - death.timer) / 1.0F, 0.0F, 1.0F);
+        client.Assets().DrawDeath(death.position, death.rotation, alpha);
+    }
+
     for (std::size_t index = 0; index < snapshot.playerCount; ++index) {
         const PlayerSnapshot& player = snapshot.players[index];
         if (snapshot.matchRunning && !player.alive) {
@@ -1240,7 +1338,7 @@ Rectangle GameplayScreen::KillFeedChevronBounds() const {
     return Rectangle{Sf(16.0F), Sf(72.0F), Sf(110.0F), Sf(24.0F)};
 }
 
-void GameplayScreen::UpdateKillFeed(const SnapshotPacket& snapshot, float dt) {
+void GameplayScreen::UpdateKillFeed(const SnapshotPacket& snapshot, float dt, const PlayerSnapshot& local, GameClient& client) {
     if (snapshot.matchRunning && snapshot.startCountdown > 0.0F && !previousMatchRunning) {
         killFeedItems.clear();
         lastKillEventId = 0;
@@ -1268,6 +1366,10 @@ void GameplayScreen::UpdateKillFeed(const SnapshotPacket& snapshot, float dt) {
             item.isSuicide = ev.isSuicide;
             item.timeRemaining = cfg::KillFeedDuration;
             killFeedItems.push_back(item);
+            if (ev.killerId == local.id && ev.victimId != local.id && !ev.isSuicide) {
+                client.Audio().PlayKillReward();
+                localKillBannerTimer = 2.2F;
+            }
             lastKillEventId = std::max(lastKillEventId, ev.eventId);
         }
     }
@@ -1700,11 +1802,12 @@ void GameplayScreen::DrawScoreboard(const SnapshotPacket& snapshot, const Player
 
             DrawRectangle(static_cast<int>(tableX), static_cast<int>(currentY), static_cast<int>(sbWidth - Sf(70.0F)), static_cast<int>(Sf(24.0F)), Color{28, 35, 48, 255});
             DrawText("PLAYER", static_cast<int>(tableX + Sf(10.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
-            DrawText("CLASS", static_cast<int>(tableX + Sf(180.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
-            DrawText("KILLS", static_cast<int>(tableX + Sf(300.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
-            DrawText("DEATHS", static_cast<int>(tableX + Sf(380.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
-            DrawText("K/D", static_cast<int>(tableX + Sf(470.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
-            DrawText("STATUS", static_cast<int>(tableX + Sf(560.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+            DrawText("CLASS", static_cast<int>(tableX + Sf(170.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+            DrawText("KILLS", static_cast<int>(tableX + Sf(270.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+            DrawText("DEATHS", static_cast<int>(tableX + Sf(340.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+            DrawText("K/D", static_cast<int>(tableX + Sf(415.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+            DrawText("PING", static_cast<int>(tableX + Sf(485.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+            DrawText("STATUS", static_cast<int>(tableX + Sf(565.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
             currentY += Sf(26.0F);
 
             int count = 0;
@@ -1726,12 +1829,15 @@ void GameplayScreen::DrawScoreboard(const SnapshotPacket& snapshot, const Player
                 const float kd = p.deaths == 0 ? static_cast<float>(p.kills) : static_cast<float>(p.kills) / static_cast<float>(p.deaths);
                 const char* youTag = isLocal ? " (You)" : "";
                 const std::string nameStr = PlayerDisplayName(p);
+                auto pingIt = displayedPings.find(p.id);
+                const std::uint16_t showPing = (pingIt != displayedPings.end()) ? pingIt->second : p.ping;
                 DrawText(TextFormat("%s%s", nameStr.c_str(), youTag), static_cast<int>(tableX + Sf(10.0F)), static_cast<int>(currentY + Sf(6.0F)), Si(14), isLocal ? Color{255, 225, 100, 255} : WhiteColor);
-                DrawText(ClassName(p.playerClass), static_cast<int>(tableX + Sf(180.0F)), static_cast<int>(currentY + Sf(6.0F)), Si(14), WhiteColor);
-                DrawText(TextFormat("%d", p.kills), static_cast<int>(tableX + Sf(300.0F)), static_cast<int>(currentY + Sf(6.0F)), Si(14), WhiteColor);
-                DrawText(TextFormat("%d", p.deaths), static_cast<int>(tableX + Sf(380.0F)), static_cast<int>(currentY + Sf(6.0F)), Si(14), WhiteColor);
-                DrawText(TextFormat("%.2f", kd), static_cast<int>(tableX + Sf(470.0F)), static_cast<int>(currentY + Sf(6.0F)), Si(14), WhiteColor);
-                DrawText(p.connected ? "Online" : "Offline", static_cast<int>(tableX + Sf(560.0F)), static_cast<int>(currentY + Sf(6.0F)), Si(14), p.connected ? Color{80, 220, 120, 255} : Color{255, 200, 70, 255});
+                DrawText(ClassName(p.playerClass), static_cast<int>(tableX + Sf(170.0F)), static_cast<int>(currentY + Sf(6.0F)), Si(14), WhiteColor);
+                DrawText(TextFormat("%d", p.kills), static_cast<int>(tableX + Sf(270.0F)), static_cast<int>(currentY + Sf(6.0F)), Si(14), WhiteColor);
+                DrawText(TextFormat("%d", p.deaths), static_cast<int>(tableX + Sf(340.0F)), static_cast<int>(currentY + Sf(6.0F)), Si(14), WhiteColor);
+                DrawText(TextFormat("%.2f", kd), static_cast<int>(tableX + Sf(415.0F)), static_cast<int>(currentY + Sf(6.0F)), Si(14), WhiteColor);
+                DrawText(TextFormat("%d ms", showPing), static_cast<int>(tableX + Sf(485.0F)), static_cast<int>(currentY + Sf(6.0F)), Si(14), showPing < 100 ? Color{80, 220, 120, 255} : (showPing < 200 ? Color{255, 200, 70, 255} : Color{255, 80, 80, 255}));
+                DrawText(p.connected ? "Online" : "Offline", static_cast<int>(tableX + Sf(565.0F)), static_cast<int>(currentY + Sf(6.0F)), Si(14), p.connected ? Color{80, 220, 120, 255} : Color{255, 200, 70, 255});
 
                 currentY += Sf(32.0F);
             }
@@ -1748,12 +1854,13 @@ void GameplayScreen::DrawScoreboard(const SnapshotPacket& snapshot, const Player
         // FFA Table
         DrawRectangle(static_cast<int>(tableX), static_cast<int>(currentY), static_cast<int>(sbWidth - Sf(70.0F)), static_cast<int>(Sf(24.0F)), Color{28, 35, 48, 255});
         DrawText("RANK", static_cast<int>(tableX + Sf(10.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
-        DrawText("PLAYER", static_cast<int>(tableX + Sf(70.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
-        DrawText("CLASS", static_cast<int>(tableX + Sf(220.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
-        DrawText("KILLS", static_cast<int>(tableX + Sf(340.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
-        DrawText("DEATHS", static_cast<int>(tableX + Sf(420.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
-        DrawText("K/D", static_cast<int>(tableX + Sf(500.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
-        DrawText("STATUS", static_cast<int>(tableX + Sf(580.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+        DrawText("PLAYER", static_cast<int>(tableX + Sf(65.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+        DrawText("CLASS", static_cast<int>(tableX + Sf(200.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+        DrawText("KILLS", static_cast<int>(tableX + Sf(300.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+        DrawText("DEATHS", static_cast<int>(tableX + Sf(365.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+        DrawText("K/D", static_cast<int>(tableX + Sf(435.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+        DrawText("PING", static_cast<int>(tableX + Sf(505.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
+        DrawText("STATUS", static_cast<int>(tableX + Sf(575.0F)), static_cast<int>(currentY + Sf(5.0F)), Si(13), MutedColor);
         currentY += Sf(30.0F);
 
         std::vector<PlayerSnapshot> sortedPlayers;
@@ -1779,13 +1886,16 @@ void GameplayScreen::DrawScoreboard(const SnapshotPacket& snapshot, const Player
             const float kd = p.deaths == 0 ? static_cast<float>(p.kills) : static_cast<float>(p.kills) / static_cast<float>(p.deaths);
             const char* youTag = isLocal ? " (You)" : "";
             const std::string nameStr = PlayerDisplayName(p);
+            auto pingIt = displayedPings.find(p.id);
+            const std::uint16_t showPing = (pingIt != displayedPings.end()) ? pingIt->second : p.ping;
             DrawText(TextFormat("#%d", static_cast<int>(i + 1)), static_cast<int>(tableX + Sf(10.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), WhiteColor);
-            DrawText(TextFormat("%s%s", nameStr.c_str(), youTag), static_cast<int>(tableX + Sf(70.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), isLocal ? Color{255, 225, 100, 255} : WhiteColor);
-            DrawText(ClassName(p.playerClass), static_cast<int>(tableX + Sf(220.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), WhiteColor);
-            DrawText(TextFormat("%d", p.kills), static_cast<int>(tableX + Sf(340.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), WhiteColor);
-            DrawText(TextFormat("%d", p.deaths), static_cast<int>(tableX + Sf(420.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), WhiteColor);
-            DrawText(TextFormat("%.2f", kd), static_cast<int>(tableX + Sf(500.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), WhiteColor);
-            DrawText(p.connected ? "Online" : "Offline", static_cast<int>(tableX + Sf(580.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), p.connected ? Color{80, 220, 120, 255} : Color{255, 200, 70, 255});
+            DrawText(TextFormat("%s%s", nameStr.c_str(), youTag), static_cast<int>(tableX + Sf(65.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), isLocal ? Color{255, 225, 100, 255} : WhiteColor);
+            DrawText(ClassName(p.playerClass), static_cast<int>(tableX + Sf(200.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), WhiteColor);
+            DrawText(TextFormat("%d", p.kills), static_cast<int>(tableX + Sf(300.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), WhiteColor);
+            DrawText(TextFormat("%d", p.deaths), static_cast<int>(tableX + Sf(365.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), WhiteColor);
+            DrawText(TextFormat("%.2f", kd), static_cast<int>(tableX + Sf(435.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), WhiteColor);
+            DrawText(TextFormat("%d ms", showPing), static_cast<int>(tableX + Sf(505.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), showPing < 100 ? Color{80, 220, 120, 255} : (showPing < 200 ? Color{255, 200, 70, 255} : Color{255, 80, 80, 255}));
+            DrawText(p.connected ? "Online" : "Offline", static_cast<int>(tableX + Sf(575.0F)), static_cast<int>(currentY + Sf(7.0F)), Si(14), p.connected ? Color{80, 220, 120, 255} : Color{255, 200, 70, 255});
 
             currentY += Sf(38.0F);
         }
@@ -1839,11 +1949,49 @@ void GameplayScreen::DrawHotbar(const PlayerSnapshot& local, const GameClient& c
     const float totalW = itemsWidth + sectionGap * static_cast<float>(items.size() - 1) + padX * 2.0F;
     const float startX = (static_cast<float>(GetScreenWidth()) - totalW) * 0.5F;
     const float startY = static_cast<float>(GetScreenHeight()) - totalH - Sf(16.0F);
+    const float hpBarH = Sf(6.0F);
+    const float hpBarY = startY - hpBarH - Sf(6.0F);
+
+    // 0. Kill banner / confirmation badge above hotbar
+    if (localKillBannerTimer > 0.0F) {
+        const float bannerAlpha = std::clamp(localKillBannerTimer * 3.0F, 0.0F, 1.0F);
+        const float popT = std::clamp((2.2F - localKillBannerTimer) / 0.18F, 0.0F, 1.0F);
+        const float popScale = 1.0F + 0.20F * std::sin(popT * 3.14159265F);
+
+        const float kIconSize = Sf(20.0F * popScale);
+        const float gap = Sf(8.0F * popScale);
+        const int killFont = Si(15.0F * popScale);
+        constexpr const char* killText = "+1 KILL";
+        const float textW = static_cast<float>(MeasureText(killText, killFont));
+        const float contentWidth = kIconSize + gap + textW;
+
+        const float bannerW = std::max(Sf(130.0F * popScale), contentWidth + Sf(24.0F * popScale));
+        const float bannerH = Sf(32.0F * popScale);
+        const float bannerX = (static_cast<float>(GetScreenWidth()) - bannerW) * 0.5F;
+        const float bannerY = (local.alive && local.id != 0) ? (hpBarY - bannerH - Sf(8.0F)) : (startY - bannerH - Sf(8.0F));
+
+        const Rectangle bRect{bannerX, bannerY, bannerW, bannerH};
+        DrawRectangleRounded(bRect, 0.35F, 8, Color{28, 14, 18, static_cast<unsigned char>(230 * bannerAlpha)});
+        DrawRectangleLinesEx(bRect, 1.5F, Color{235, 65, 75, static_cast<unsigned char>(240 * bannerAlpha)});
+
+        const float contentStartX = bannerX + (bannerW - contentWidth) * 0.5F;
+        const float kIconX = contentStartX;
+        const float kIconY = bannerY + (bannerH - kIconSize) * 0.5F;
+
+        const Texture2D& kTex = client.Assets().KillIcon();
+        if (kTex.id != 0 && kTex.width > 0) {
+            const Rectangle src{0.0F, 0.0F, static_cast<float>(kTex.width), static_cast<float>(kTex.height)};
+            const Rectangle dst{kIconX, kIconY, kIconSize, kIconSize};
+            DrawTexturePro(kTex, src, dst, Vector2{0.0F, 0.0F}, 0.0F, Color{255, 255, 255, static_cast<unsigned char>(255 * bannerAlpha)});
+        }
+
+        const float textX = contentStartX + kIconSize + gap;
+        const float textY = bannerY + (bannerH - static_cast<float>(killFont)) * 0.5F;
+        DrawText(killText, static_cast<int>(textX), static_cast<int>(textY), killFont, Color{255, 220, 90, static_cast<unsigned char>(255 * bannerAlpha)});
+    }
 
     // 1. Health bar just above hotbar for local player
     if (local.alive && local.id != 0) {
-        const float hpBarH = Sf(6.0F);
-        const float hpBarY = startY - hpBarH - Sf(6.0F);
         const Rectangle hpBg{startX, hpBarY, totalW, hpBarH};
         DrawRectangleRounded(hpBg, 0.4F, 4, Color{18, 22, 28, 220});
         DrawRectangleLinesEx(hpBg, 1.0F, Color{45, 56, 72, 180});

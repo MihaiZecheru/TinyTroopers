@@ -208,6 +208,7 @@ int GameClient::Run() {
         if (network.PollSnapshot(incoming)) {
             snapshot = incoming;
             newSnapshotReceived = true;
+            lastServerTime = incoming.serverTime;
             secondsSinceServerPacket = 0.0F;
             if (connecting) {
                 connecting = false;
@@ -250,6 +251,7 @@ int GameClient::Run() {
             if (heartbeatAccumulator >= cfg::ClientSendSeconds) {
                 InputPacket packet{};
                 packet.header = MakeHeader(PacketType::Input, sizeof(InputPacket));
+                packet.serverTimeAck = lastServerTime;
                 network.SendInput(packet);
                 heartbeatAccumulator = 0.0F;
             }

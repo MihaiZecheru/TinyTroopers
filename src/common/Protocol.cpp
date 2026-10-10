@@ -32,6 +32,7 @@ struct CompactSnapshotHeader {
     std::uint32_t winnerPlayerId;
     TeamId winnerTeam;
     bool matchEndedByForfeit;
+    std::uint32_t serverTime;
 };
 #pragma pack(pop)
 
@@ -75,6 +76,7 @@ int SerializeCompactSnapshot(const SnapshotPacket& src, std::uint8_t* dest, int 
     compHdr.winnerPlayerId = src.winnerPlayerId;
     compHdr.winnerTeam = src.winnerTeam;
     compHdr.matchEndedByForfeit = src.matchEndedByForfeit;
+    compHdr.serverTime = src.serverTime;
 
     std::uint8_t* ptr = dest;
     std::memcpy(ptr, &compHdr, sizeof(compHdr));
@@ -157,6 +159,7 @@ bool DeserializeCompactSnapshot(const std::uint8_t* src, int srcSize, SnapshotPa
     dest.winnerPlayerId = compHdr.winnerPlayerId;
     dest.winnerTeam = compHdr.winnerTeam;
     dest.matchEndedByForfeit = compHdr.matchEndedByForfeit;
+    dest.serverTime = compHdr.serverTime;
 
     const std::uint8_t* ptr = src + sizeof(CompactSnapshotHeader);
     if (validPlayers > 0) {

@@ -54,6 +54,7 @@ private:
         bool connected;
         float reconnectRemaining;
         float invulnerableRemaining;
+        std::uint16_t ping;
     };
 
     struct BulletState {

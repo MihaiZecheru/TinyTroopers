@@ -311,25 +311,29 @@ void RoomJoiningScreen::Update(GameClient& client) {
         }
     }
 
+    const bool ctrlDown = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL) ||
+                          IsKeyDown(KEY_LEFT_SUPER) || IsKeyDown(KEY_RIGHT_SUPER);
+
     int key = GetCharPressed();
     while (key > 0) {
         const char typed = static_cast<char>(key);
-        if (focus == FieldFocus::Name && IsValidNameChar(typed) && std::strlen(nameBuffer) < 16) {
-            PushChar(nameBuffer, sizeof(nameBuffer), typed);
-        }
-        if (focus == FieldFocus::ServerHost && IsServerHostChar(typed)) {
-            PushChar(serverHostBuffer, sizeof(serverHostBuffer), typed);
-        }
-        if (focus == FieldFocus::RoomCode && typed >= '0' && typed <= '9' && std::strlen(roomCodeBuffer) < cfg::RoomCodeLength) {
-            PushChar(roomCodeBuffer, cfg::RoomCodeBytes, typed);
+        if (!ctrlDown) {
+            if (focus == FieldFocus::Name && IsValidNameChar(typed) && std::strlen(nameBuffer) < 16) {
+                PushChar(nameBuffer, sizeof(nameBuffer), typed);
+            }
+            if (focus == FieldFocus::ServerHost && IsServerHostChar(typed)) {
+                PushChar(serverHostBuffer, sizeof(serverHostBuffer), typed);
+            }
+            if (focus == FieldFocus::RoomCode && typed >= '0' && typed <= '9' && std::strlen(roomCodeBuffer) < cfg::RoomCodeLength) {
+                PushChar(roomCodeBuffer, cfg::RoomCodeBytes, typed);
+            }
         }
         key = GetCharPressed();
     }
 
-    const bool ctrlDown = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL) ||
-                          IsKeyDown(KEY_LEFT_SUPER) || IsKeyDown(KEY_RIGHT_SUPER);
-    const bool deleteDown = IsKeyDown(KEY_BACKSPACE) || IsKeyDown(KEY_DELETE);
-    const bool deletePressed = IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_DELETE);
+    const bool ctrlW = ctrlDown && IsKeyPressed(KEY_W);
+    const bool deleteDown = IsKeyDown(KEY_BACKSPACE) || IsKeyDown(KEY_DELETE) || (ctrlDown && IsKeyDown(KEY_W));
+    const bool deletePressed = IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_DELETE) || ctrlW;
 
     auto doDelete = [&]() {
         if (ctrlDown) {

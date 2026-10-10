@@ -21,6 +21,7 @@ public:
     void PlayHitmarker();
     void PlayGrenade();
     void PlayBarrier();
+    void PlayKillReward();
 
 private:
     struct WeaponAudioPool {
@@ -39,6 +40,7 @@ private:
     Sound hitmarker;
     Sound grenade;
     Sound barrier;
+    Sound killReward;
     bool ready;
     std::mt19937 rng;
 };

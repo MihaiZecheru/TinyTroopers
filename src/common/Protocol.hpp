@@ -50,7 +50,7 @@ inline constexpr float ClassCooldown(PlayerClass playerClass) {
 
 inline constexpr float ClassReloadSeconds(PlayerClass playerClass) {
     switch (playerClass) {
-    case PlayerClass::Sniper: return cfg::ReloadSeconds * 3.0F;
+    case PlayerClass::Sniper: return 2.75F;
     default: return cfg::ReloadSeconds;
     }
 }
@@ -169,6 +169,7 @@ struct InputPacket {
     float aimY;
     float grenadeTargetX;
     float grenadeTargetY;
+    std::uint32_t serverTimeAck;
 };
 
 struct StartMatchPacket {
@@ -203,6 +204,7 @@ struct PlayerSnapshot {
     std::uint8_t grenades;
     std::uint8_t barriers;
     float invulnerableRemaining;
+    std::uint16_t ping;
     std::array<char, cfg::NameBytes> name;
 };
 
@@ -245,6 +247,7 @@ struct SnapshotPacket {
     std::uint32_t winnerPlayerId;
     TeamId winnerTeam;
     bool matchEndedByForfeit;
+    std::uint32_t serverTime;
     std::array<PlayerSnapshot, cfg::MaxPlayers> players;
     std::array<BulletSnapshot, cfg::MaxBullets> bullets;
     std::array<GrenadeSnapshot, cfg::MaxGrenades> grenades;

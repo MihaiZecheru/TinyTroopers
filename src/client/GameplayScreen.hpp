@@ -5,6 +5,7 @@
 #include "raylib.h"
 
 #include <array>
+#include <unordered_map>
 #include <vector>
 
 class GameClient;
@@ -36,6 +37,13 @@ private:
         float currentRotation = 0.0F;
         float targetRotation = 0.0F;
         bool active = false;
+    };
+
+    struct DeathEffect {
+        Vector2 position{0.0F, 0.0F};
+        float rotation{0.0F};
+        float timer{0.0F};
+        float maxDuration{3.0F};
     };
 
     std::uint32_t sequence;
@@ -71,6 +79,15 @@ private:
     std::array<PlayerInterp, cfg::MaxPlayers> playerInterp;
     Vector2 localInterpPos;
 
+    std::vector<DeathEffect> deathEffects;
+    std::array<bool, cfg::MaxPlayers> previousPlayerAlive;
+    std::array<Vector2, cfg::MaxPlayers> previousPlayerPos;
+    std::array<float, cfg::MaxPlayers> previousPlayerRot;
+    std::array<std::uint32_t, cfg::MaxPlayers> previousPlayerId;
+    float localKillBannerTimer;
+    float pingDisplayTimer;
+    std::unordered_map<std::uint32_t, std::uint16_t> displayedPings;
+
     mutable RenderTexture2D mapTexture;
     mutable int cachedMapIndex;
 
@@ -83,7 +100,7 @@ private:
     void UpdateRespawnModal(GameClient& client, const PlayerSnapshot& local);
     void DrawRespawnModal(GameClient& client, const PlayerSnapshot& local) const;
     Rectangle KillFeedChevronBounds() const;
-    void UpdateKillFeed(const SnapshotPacket& snapshot, float dt);
+    void UpdateKillFeed(const SnapshotPacket& snapshot, float dt, const PlayerSnapshot& local, GameClient& client);
     void DrawKillFeed(const PlayerSnapshot& local, const SnapshotPacket& snapshot) const;
     void UpdateEscapeMenu(GameClient& client);
     void DrawEscapeMenu(GameClient& client) const;

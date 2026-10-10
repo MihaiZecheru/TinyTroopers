@@ -12,9 +12,10 @@ constexpr const char* EmptyClickPath = "assets/empty_click.wav";
 constexpr const char* HitmarkerPath = "assets/hitmarker.wav";
 constexpr const char* GrenadePath = "assets/grenade.wav";
 constexpr const char* BarrierPath = "assets/barrier.wav";
+constexpr const char* KillRewardPath = "assets/kill_reward.wav";
 }
 
-AudioManager::AudioManager() : weaponPools{}, empty{}, hitmarker{}, grenade{}, barrier{}, ready(false), rng(std::random_device{}()) {}
+AudioManager::AudioManager() : weaponPools{}, empty{}, hitmarker{}, grenade{}, barrier{}, killReward{}, ready(false), rng(std::random_device{}()) {}
 
 AudioManager::~AudioManager() {
     if (!ready) {
@@ -34,6 +35,7 @@ AudioManager::~AudioManager() {
     UnloadOptionalSound(hitmarker);
     UnloadOptionalSound(grenade);
     UnloadOptionalSound(barrier);
+    UnloadOptionalSound(killReward);
     CloseAudioDevice();
 }
 
@@ -68,6 +70,7 @@ void AudioManager::Load() {
     hitmarker = LoadOptionalSound(HitmarkerPath);
     grenade = LoadOptionalSound(GrenadePath);
     barrier = LoadOptionalSound(BarrierPath);
+    killReward = LoadOptionalSound(KillRewardPath);
     TraceLog(LOG_INFO, "AUDIO: TinyTroopers audio startup complete");
 }
 
@@ -156,6 +159,10 @@ void AudioManager::PlayGrenade() {
 
 void AudioManager::PlayBarrier() {
     PlayOptionalSound(barrier);
+}
+
+void AudioManager::PlayKillReward() {
+    PlayOptionalSound(killReward);
 }
 
 Sound AudioManager::LoadOptionalSound(const char* path) {
