@@ -380,10 +380,12 @@ void Room::ApplyInput(std::uint32_t playerId, const InputPacket& packet) {
         const std::uint32_t nowMs = static_cast<std::uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
         if (nowMs >= packet.serverTimeAck) {
             const std::uint32_t rtt = nowMs - packet.serverTimeAck;
-            if (player->ping == 0) {
-                player->ping = static_cast<std::uint16_t>(std::min<std::uint32_t>(rtt, 999));
-            } else {
-                player->ping = static_cast<std::uint16_t>(std::min<std::uint32_t>(static_cast<std::uint32_t>(player->ping * 0.7F + rtt * 0.3F), 999));
+            if (rtt <= 10000) {
+                if (player->ping == 0) {
+                    player->ping = static_cast<std::uint16_t>(std::min<std::uint32_t>(rtt, 999));
+                } else {
+                    player->ping = static_cast<std::uint16_t>(std::min<std::uint32_t>(static_cast<std::uint32_t>(player->ping * 0.7F + rtt * 0.3F), 999));
+                }
             }
         }
     }
