@@ -51,9 +51,9 @@ jobs:
           name: TinyTroopers-Client-Windows
           path: TinyTroopers-Windows/
 
-  build-macos:
-    name: Build macOS Client
-    runs-on: macos-latest
+  build-macos-intel:
+    name: Build macOS Client (Intel x86_64)
+    runs-on: macos-13
 
     steps:
       - name: Checkout repository
@@ -68,7 +68,8 @@ jobs:
         run: |
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix)"
+            -DCMAKE_PREFIX_PATH="$(brew --prefix)" \
+            -DCMAKE_OSX_ARCHITECTURES=x86_64
 
       - name: Build TinyTroopersClient
         run: |
@@ -76,7 +77,7 @@ jobs:
 
       - name: Package macOS Release
         run: |
-          mkdir -p TinyTroopers-macOS
+          mkdir -p TinyTroopers-macOS-Intel
           
           BIN_PATH=""
           if [ -f "build/TinyTroopersClient" ]; then
@@ -86,17 +87,17 @@ jobs:
           fi
           
           # Standalone binary package
-          cp "$BIN_PATH" TinyTroopers-macOS/TinyTroopersClient
-          chmod +x TinyTroopers-macOS/TinyTroopersClient
-          cp -r assets TinyTroopers-macOS/
-          [ -f "README.md" ] && cp README.md TinyTroopers-macOS/
+          cp "$BIN_PATH" TinyTroopers-macOS-Intel/TinyTroopersClient
+          chmod +x TinyTroopers-macOS-Intel/TinyTroopersClient
+          cp -r assets TinyTroopers-macOS-Intel/
+          [ -f "README.md" ] && cp README.md TinyTroopers-macOS-Intel/
           
           # Create RunGame.command launcher script
-          printf '#!/bin/bash\nDIR="$(cd "$(dirname "$0")" && pwd)"\ncd "$DIR"\nchmod +x ./TinyTroopersClient 2>/dev/null || true\n./TinyTroopersClient\n' > TinyTroopers-macOS/RunGame.command
-          chmod +x TinyTroopers-macOS/RunGame.command
+          printf '#!/bin/bash\nDIR="$(cd "$(dirname "$0")" && pwd)"\ncd "$DIR"\nchmod +x ./TinyTroopersClient 2>/dev/null || true\n./TinyTroopersClient\n' > TinyTroopers-macOS-Intel/RunGame.command
+          chmod +x TinyTroopers-macOS-Intel/RunGame.command
 
           # Create macOS .app Bundle
-          APP_DIR="TinyTroopers-macOS/TinyTroopers.app"
+          APP_DIR="TinyTroopers-macOS-Intel/TinyTroopers.app"
           mkdir -p "$APP_DIR/Contents/MacOS"
           mkdir -p "$APP_DIR/Contents/Resources"
           
@@ -137,16 +138,109 @@ jobs:
           EOF
           sed -i '' -e 's/^[[:space:]]*//' "$APP_DIR/Contents/Info.plist" 2>/dev/null || sed -i -e 's/^[[:space:]]*//' "$APP_DIR/Contents/Info.plist"
 
-      - name: Upload macOS Artifact
+      - name: Upload macOS Intel Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TinyTroopers-Client-macOS
-          path: TinyTroopers-macOS/
+          name: TinyTroopers-Client-macOS-Intel
+          path: TinyTroopers-macOS-Intel/
+
+  build-macos-arm:
+    name: Build macOS Client (Apple Silicon arm64)
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install cmake raylib
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$(brew --prefix)" \
+            -DCMAKE_OSX_ARCHITECTURES=arm64
+
+      - name: Build TinyTroopersClient
+        run: |
+          cmake --build build --config Release --target TinyTroopersClient
+
+      - name: Package macOS Release
+        run: |
+          mkdir -p TinyTroopers-macOS-ARM
+          
+          BIN_PATH=""
+          if [ -f "build/TinyTroopersClient" ]; then
+            BIN_PATH="build/TinyTroopersClient"
+          elif [ -f "build/Release/TinyTroopersClient" ]; then
+            BIN_PATH="build/Release/TinyTroopersClient"
+          fi
+          
+          # Standalone binary package
+          cp "$BIN_PATH" TinyTroopers-macOS-ARM/TinyTroopersClient
+          chmod +x TinyTroopers-macOS-ARM/TinyTroopersClient
+          cp -r assets TinyTroopers-macOS-ARM/
+          [ -f "README.md" ] && cp README.md TinyTroopers-macOS-ARM/
+          
+          # Create RunGame.command launcher script
+          printf '#!/bin/bash\nDIR="$(cd "$(dirname "$0")" && pwd)"\ncd "$DIR"\nchmod +x ./TinyTroopersClient 2>/dev/null || true\n./TinyTroopersClient\n' > TinyTroopers-macOS-ARM/RunGame.command
+          chmod +x TinyTroopers-macOS-ARM/RunGame.command
+
+          # Create macOS .app Bundle
+          APP_DIR="TinyTroopers-macOS-ARM/TinyTroopers.app"
+          mkdir -p "$APP_DIR/Contents/MacOS"
+          mkdir -p "$APP_DIR/Contents/Resources"
+          
+          cp "$BIN_PATH" "$APP_DIR/Contents/MacOS/TinyTroopersClient"
+          chmod +x "$APP_DIR/Contents/MacOS/TinyTroopersClient"
+          cp -r assets "$APP_DIR/Contents/MacOS/"
+          cp -r assets "$APP_DIR/Contents/Resources/"
+          
+          cat << 'EOF' > "$APP_DIR/Contents/Info.plist"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleDevelopmentRegion</key>
+              <string>en</string>
+              <key>CFBundleExecutable</key>
+              <string>TinyTroopersClient</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.tinytroopers.client</string>
+              <key>CFBundleInfoDictionaryVersion</key>
+              <string>6.0</string>
+              <key>CFBundleName</key>
+              <string>TinyTroopers</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>CFBundleVersion</key>
+              <string>1</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>11.0</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+              <key>NSSupportsAutomaticGraphicsSwitching</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+          sed -i '' -e 's/^[[:space:]]*//' "$APP_DIR/Contents/Info.plist" 2>/dev/null || sed -i -e 's/^[[:space:]]*//' "$APP_DIR/Contents/Info.plist"
+
+      - name: Upload macOS ARM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TinyTroopers-Client-macOS-ARM
+          path: TinyTroopers-macOS-ARM/
 
   create-release:
     name: Create GitHub Release
     if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
-    needs: [build-windows, build-macos]
+    needs: [build-windows, build-macos-intel, build-macos-arm]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -163,19 +257,31 @@ jobs:
           name: TinyTroopers-Client-Windows
           path: TinyTroopers-Windows
 
-      - name: Download macOS Artifact
+      - name: Download macOS Intel Artifact
         uses: actions/download-artifact@v4
         with:
-          name: TinyTroopers-Client-macOS
-          path: TinyTroopers-macOS
+          name: TinyTroopers-Client-macOS-Intel
+          path: TinyTroopers-macOS-Intel
+
+      - name: Download macOS ARM Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: TinyTroopers-Client-macOS-ARM
+          path: TinyTroopers-macOS-ARM
 
       - name: Create Release Zip Archives
         run: |
           cd TinyTroopers-Windows && zip -r ../TinyTroopers-Client-Windows.zip . && cd ..
-          chmod +x TinyTroopers-macOS/TinyTroopersClient || true
-          chmod +x TinyTroopers-macOS/RunGame.command || true
-          chmod -R +x TinyTroopers-macOS/TinyTroopers.app/Contents/MacOS || true
-          cd TinyTroopers-macOS && zip -ry ../TinyTroopers-Client-macOS.zip . && cd ..
+
+          chmod +x TinyTroopers-macOS-Intel/TinyTroopersClient || true
+          chmod +x TinyTroopers-macOS-Intel/RunGame.command || true
+          chmod -R +x TinyTroopers-macOS-Intel/TinyTroopers.app/Contents/MacOS || true
+          cd TinyTroopers-macOS-Intel && zip -ry ../TinyTroopers-Client-macOS-Intel.zip . && cd ..
+
+          chmod +x TinyTroopers-macOS-ARM/TinyTroopersClient || true
+          chmod +x TinyTroopers-macOS-ARM/RunGame.command || true
+          chmod -R +x TinyTroopers-macOS-ARM/TinyTroopers.app/Contents/MacOS || true
+          cd TinyTroopers-macOS-ARM && zip -ry ../TinyTroopers-Client-macOS-ARM.zip . && cd ..
 
       - name: Determine Release Info & Update Rolling Tag
         id: release_info
@@ -198,5 +304,6 @@ jobs:
           make_latest: true
           files: |
             TinyTroopers-Client-Windows.zip
-            TinyTroopers-Client-macOS.zip
+            TinyTroopers-Client-macOS-Intel.zip
+            TinyTroopers-Client-macOS-ARM.zip
           generate_release_notes: true
