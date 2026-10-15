@@ -77,6 +77,14 @@ cmake --build build
 # (or .\build\TinyTroopersClient.exe if using MinGW/Ninja)
 ```
 
+### macOS (prebuilt release)
+
+The macOS release is a universal build that runs natively on both Apple Silicon and Intel Macs (macOS 11+). It isn't notarized, so macOS blocks it the first time you run it. Either right-click `TinyTroopers.app` → **Open**, or go to **System Settings → Privacy & Security → Open Anyway**. You can also clear the quarantine flag yourself:
+
+```bash
+xattr -dr com.apple.quarantine TinyTroopers.app
+```
+
 ### macOS / Linux
 
 ```bash

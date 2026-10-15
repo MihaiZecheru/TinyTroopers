@@ -9,6 +9,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Option to build only the dedicated server without client / raylib dependencies
 option(BUILD_SERVER_ONLY "Build only the dedicated server (headless)" OFF)
 
+# Always build raylib from source as a static library (used for distributable builds,
+# so the binary does not depend on a locally installed raylib, e.g. Homebrew's dylib)
+option(FETCH_RAYLIB "Build raylib from source instead of using an installed copy" OFF)
+
 # Default to Release build if no build type is specified (for single-config generators)
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build: Debug Release RelWithDebInfo MinSizeRel." FORCE)
@@ -48,8 +52,10 @@ endif()
 
 # Client and Tool Targets (skipped if BUILD_SERVER_ONLY=ON)
 if(NOT BUILD_SERVER_ONLY)
-    find_package(raylib CONFIG QUIET)
-    if(NOT raylib_FOUND AND EXISTS "C:/raylib/w64devkit/include/raylib.h")
+    if(NOT FETCH_RAYLIB)
+        find_package(raylib CONFIG QUIET)
+    endif()
+    if(NOT FETCH_RAYLIB AND NOT raylib_FOUND AND EXISTS "C:/raylib/w64devkit/include/raylib.h")
         add_library(raylib STATIC IMPORTED GLOBAL)
         set_target_properties(raylib PROPERTIES
             IMPORTED_LOCATION "C:/raylib/w64devkit/lib/libraylib.a"
@@ -60,6 +66,7 @@ if(NOT BUILD_SERVER_ONLY)
         message(STATUS "raylib not found locally, fetching via FetchContent...")
         include(FetchContent)
         set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
         FetchContent_Declare(
             raylib
             GIT_REPOSITORY https://github.com/raysan5/raylib.git
